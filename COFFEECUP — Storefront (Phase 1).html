@@ -31,6 +31,8 @@ nav a{color:var(--tx);text-decoration:none;font-weight:500}
 #cnt{display:inline-grid;place-items:center;min-width:1.5rem;height:1.5rem;border-radius:99px;background:#090909;color:#F2E9DC;font-size:.85rem}
 .hero{padding:56px 20px;display:grid;grid-template-columns:1.2fr 1fr;gap:40px;align-items:center}
 .hero>div{animation:up .7s both}.hero>div+div{animation-delay:.15s}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
+.section-head h2{margin:0}.section-head .btn{white-space:nowrap}
 @keyframes up{from{opacity:0;transform:translateY(14px)}}
 h1{font:700 clamp(3rem,8.5vw,6rem)/.92 var(--hd);text-transform:uppercase;margin:0 0 .35em}
 .lead{color:var(--mu);font-size:1.15rem;max-width:32ch;margin:0 0 1.5rem}
@@ -87,6 +89,7 @@ pre{white-space:pre-wrap;background:var(--sf2);padding:10px;border-radius:6px;fo
 .cx{color:var(--cu);font-weight:600}
 @media(max-width:760px){.hero{grid-template-columns:1fr;padding-top:28px}.lc{order:-1;max-width:340px}}
 @media(max-width:560px){nav a{display:none}}
+@media(max-width:420px){.section-head{align-items:flex-start;flex-direction:column}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -102,6 +105,8 @@ pre{white-space:pre-wrap;background:var(--sf2);padding:10px;border-radius:6px;fo
 <div><h1 data-i="h1"></h1><p class="lead" data-i="lead"></p><a class="btn" href="#menu" data-i="order"></a></div>
 <div class="lc"><img src="/assets/coffeecup-logo.png" alt="COFFEECUP coffee shop logo" width="720" height="480"></div>
 </div>
+<section id="featured"><div class="section-head"><h2 data-i="featured"></h2><a class="btn ghost" href="#menu" data-i="viewMenu"></a></div>
+<div class="grid" id="featuredGrid" aria-live="polite"></div></section>
 <section id="menu"><h2 data-i="menu"></h2>
 <div class="tools"><input type="search" id="q" style="max-width:320px"><div class="chips" id="chips"></div></div>
 <div class="grid" id="grid"></div></section>
@@ -236,6 +241,7 @@ const media=(p,sm)=>`<div class="art${sm?' sm':''}"><img src="${picUrl(p)}" alt=
 // The publishable key is meant for browsers. Row Level Security in the database is what protects the data.
 const API_BASE=location.origin;
 Object.assign(S,{
+featured:['Our picks','اختياراتنا'],viewMenu:['Full menu','المنيو الكامل'],
 nTrack:['Track order','تتبع الطلب'],tRef:['Order reference','رقم الطلب'],tGo:['Track','تتبع'],
 apply:['Apply','تطبيق'],dc:['Discount code','رمز الخصم'],disc:['Discount','الخصم'],size:['Size','الحجم'],noOpt:['None','بدون'],
 loadErr:['Could not load the menu.','تعذّر تحميل القائمة.'],retry:['Try again','أعد المحاولة'],
@@ -284,12 +290,14 @@ const subtotal=()=>cart.reduce((t,i)=>t+lineP(i),0);
 const summ=i=>{const p=prod(i.id);return [(p.sz.find(v=>v.id===i.o.size)||{}).n,...p.gr.map(g=>(g.o.find(x=>x.id===i.o[g.k])||{}).n)].filter(Boolean).map(pick).join(' · ')};
 
 function chips(){$('#chips').innerHTML=[['all',S.all],...CATS].map(([k,n])=>`<button class="chip" data-c="${k}" aria-pressed="${k===cat}">${pick(n)}</button>`).join('')}
-function grid(){const g=$('#grid');g.setAttribute('aria-busy',loading);
- if(loading){g.innerHTML='<div class="card sk"></div>'.repeat(8);return}
- if(failed){g.innerHTML=`<div><p>${s('loadErr')}</p><p class="mu er" dir="ltr" style="text-align:start;word-break:break-word"></p><button class="btn" id="rt">${s('retry')}</button></div>`;g.querySelector('.er').textContent=err;return}
+const cardHTML=p=>`<article class="card">${media(p,false)}<div class="cb"><h3>${pick(p.n)}</h3><p>${pick(p.d)}</p><div class="row"><span class="price">${s('from')} ${m(p.p)}</span>${p.ok?`<button class="btn" data-p="${p.id}">${s(p.sz.length||p.gr.length?'cust':'addS')}</button>`:`<span class="tag">${s('sold')}</span>`}</div></div></article>`;
+function grid(){const g=$('#grid'),f=$('#featuredGrid');g.setAttribute('aria-busy',loading);
+ if(loading){g.innerHTML='<div class="card sk"></div>'.repeat(8);f.innerHTML='<div class="card sk"></div>'.repeat(3);return}
+ if(failed){g.innerHTML=`<div><p>${s('loadErr')}</p><p class="mu er" dir="ltr" style="text-align:start;word-break:break-word"></p><button class="btn" id="rt">${s('retry')}</button></div>`;g.querySelector('.er').textContent=err;f.innerHTML=`<p>${s('loadErr')}</p>`;return}
  const t=q.trim().toLowerCase();
  const r=PR.filter(p=>(cat==='all'||p.c===cat)&&(!t||(p.n[0]+p.n[1]+p.d[0]+p.d[1]).toLowerCase().includes(t)));
- g.innerHTML=r.length?r.map(p=>`<article class="card">${media(p,false)}<div class="cb"><h3>${pick(p.n)}</h3><p>${pick(p.d)}</p><div class="row"><span class="price">${s('from')} ${m(p.p)}</span>${p.ok?`<button class="btn" data-p="${p.id}">${s(p.sz.length||p.gr.length?'cust':'addS')}</button>`:`<span class="tag">${s('sold')}</span>`}</div></div></article>`).join(''):`<p>${s('none')}</p>`}
+ g.innerHTML=r.length?r.map(cardHTML).join(''):`<p>${s('none')}</p>`;
+ f.innerHTML=PR.filter(p=>p.ok).slice(0,3).map(cardHTML).join('')||`<p>${s('none')}</p>`}
 function paint(){const n=cart.reduce((t,i)=>t+i.q,0);$('#cnt').textContent=n;
  $('#cl').innerHTML=cart.length?cart.map((i,x)=>{const p=prod(i.id);return `<div class="li">${media(p,true)}<div><b>${pick(p.n)}</b><div class="mu">${summ(i)}</div><div class="qty"><button data-a="${x}" data-d="-1" aria-label="−">−</button><b>${i.q}</b><button data-a="${x}" data-d="1" aria-label="+">+</button></div><button class="lnk" data-r="${x}">${s('rm')}</button></div><b>${m(lineP(i))}</b></div>`}).join(''):`<p>${s('empty')}</p>`;
  $('#dl').hidden=!disc;$('#dv').textContent='− '+m(disc);
@@ -320,6 +328,7 @@ $('#pd').onclick=e=>{if(e.target===e.currentTarget)return e.currentTarget.close(
  else if(b.id==='ad'){addCart();$('#pd').close()}};
 $('#pd').onchange=e=>{if(e.target.type==='radio'){sel[e.target.name]=e.target.value;upd()}};
 $('#grid').onclick=e=>{if(e.target.id==='rt')return load();const b=e.target.closest('[data-p]');if(b)open1(b.dataset.p)};
+$('#featuredGrid').onclick=e=>{const b=e.target.closest('[data-p]');if(b)open1(b.dataset.p)};
 $('#chips').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;cat=b.dataset.c;$$('.chip').forEach(c=>c.setAttribute('aria-pressed',c.dataset.c===cat));grid()};
 $('#q').oninput=e=>{q=e.target.value;grid()};
 $('#lg').onclick=()=>{lang=ar()?'en':'ar';try{localStorage.setItem('cc_l',lang)}catch(e){}lng()};
