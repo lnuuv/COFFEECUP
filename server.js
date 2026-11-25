@@ -22,6 +22,7 @@ if (!storefrontFile) {
 
 app.disable('x-powered-by');
 app.use(express.json({ limit: '32kb', strict: true }));
+app.use('/assets', express.static(path.join(__dirname, 'assets'), { maxAge: '1h' }));
 
 // Small per-instance limit for public RPC calls; SQL functions still validate every operation.
 const windows = new Map();
