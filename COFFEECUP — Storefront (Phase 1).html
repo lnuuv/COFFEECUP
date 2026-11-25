@@ -21,7 +21,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--ln)}
 .bar,.hero,section{max-width:1120px;margin:0 auto}
 .bar{padding:12px 20px;display:flex;align-items:center;gap:16px}
-.logo{font:700 1.7rem var(--hd);letter-spacing:.05em;color:var(--tx);text-decoration:none}.logo b{color:var(--cu)}
+.logo{display:flex;align-items:center;flex:none;text-decoration:none}.logo img{display:block;width:135px;height:45px;object-fit:contain}
 nav{margin-inline-start:auto;display:flex;align-items:center;gap:14px}
 nav a{color:var(--tx);text-decoration:none;font-weight:500}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;background:var(--cb);color:#090909;border:1px solid var(--cb);border-radius:6px;padding:.65rem 1.1rem;font:600 1rem var(--bd);cursor:pointer;text-decoration:none}
@@ -90,7 +90,7 @@ pre{white-space:pre-wrap;background:var(--sf2);padding:10px;border-radius:6px;fo
 </head>
 <body>
 <header><div class="bar">
-<a class="logo" href="#top" aria-label="COFFEECUP">COFFEE<b>CUP</b></a>
+<a class="logo" href="#top" aria-label="COFFEECUP"><img src="/assets/coffeecup-wordmark.png" alt="" width="135" height="45"></a>
 <nav><a href="#menu" data-i="nMenu"></a><a href="#about" data-i="nAbout"></a><a href="#track" data-i="nTrack"></a>
 <button class="btn ghost" id="lg" aria-label="Language / اللغة">ع</button>
 <button class="btn" id="cartBtn"><span data-i="cart"></span><b id="cnt" aria-live="polite">0</b></button></nav>
