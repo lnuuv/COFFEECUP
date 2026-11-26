@@ -267,13 +267,15 @@ const api=async(path,body)=>{
  if(!r.ok)throw new Error(((j&&j.message)||'http_'+r.status)+(j&&j.hint?' ('+j.hint+')':''));return j};
 
 const by=(a,b)=>a.sort_order-b.sort_order;
+let SBU='';
 async function load(){const first=!PR.length;if(first){loading=true;failed=false;grid()}
+ if(!SBU){try{SBU=(await(await fetch('/api/config')).json()).url||''}catch(e){}}
  try{const[c,p,st]=await Promise.all([
   api('categories?select=slug,name_en,name_ar,sort_order&order=sort_order'),
-  api('products?select=id,name_en,name_ar,description_en,description_ar,base_price,is_available,sort_order,categories(slug),product_variants(id,name_en,name_ar,price_delta,is_default,sort_order),option_groups(id,name_en,name_ar,is_required,sort_order,product_options(id,name_en,name_ar,price_delta,is_default,is_available,sort_order))&order=sort_order'),
+  api('products?select=id,name_en,name_ar,description_en,description_ar,image_path,base_price,is_available,sort_order,categories(slug),product_variants(id,name_en,name_ar,price_delta,is_default,sort_order),option_groups(id,name_en,name_ar,is_required,sort_order,product_options(id,name_en,name_ar,price_delta,is_default,is_available,sort_order))&order=sort_order'),
   api('store_settings?select=key,value')]);
   CATS=c.map(x=>[x.slug,[x.name_en,x.name_ar]]);
-  PR=p.map(r=>({id:r.id,c:r.categories.slug,n:[r.name_en,r.name_ar],d:[r.description_en,r.description_ar],img:r.image_url||null,p:fils(r.base_price),ok:r.is_available,
+  PR=p.map(r=>({id:r.id,c:r.categories.slug,n:[r.name_en,r.name_ar],d:[r.description_en,r.description_ar],img:r.image_path&&SBU?SBU+'/storage/v1/object/public/product-images/'+r.image_path:null,p:fils(r.base_price),ok:r.is_available,
    sz:r.product_variants.sort(by).map(v=>({id:v.id,n:[v.name_en,v.name_ar],d:fils(v.price_delta),def:v.is_default})),
    gr:r.option_groups.sort(by).map(g=>({k:g.id,n:[g.name_en,g.name_ar],req:g.is_required,
     o:g.product_options.filter(o=>o.is_available).sort(by).map(o=>({id:o.id,n:[o.name_en,o.name_ar],d:fils(o.price_delta),def:o.is_default}))})).filter(g=>g.o.length)}));

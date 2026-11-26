@@ -107,13 +107,16 @@ tr[data-id]{cursor:pointer}tr[data-id]:hover{background:var(--sf2)}
 .pill{display:inline-block;padding:.1rem .6rem;border-radius:99px;border:1px solid var(--ln);font-size:.85rem}
 .pill.new{background:var(--cb);border-color:var(--cb);color:#090909}.pill.cancelled{color:var(--cu);border-color:var(--cu)}
 .items{list-style:none;padding:0;margin:0;display:grid;gap:8px}
-#dl{width:min(620px,calc(100% - 24px))}
+#dl,#pe{width:min(620px,calc(100% - 24px))}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ck{display:flex;align-items:center;gap:8px;font-weight:500}.ck input{width:auto}
+@media(max-width:560px){.fg{grid-template-columns:1fr}}
 @media(max-width:560px){nav .btn{padding:.5rem .7rem}}
 </style>
 </head>
 <body>
 <header><div class="bar"><span class="brand">COFFEE<b>CUP</b><small>Admin</small></span>
-<nav id="nv" hidden><button class="chip" data-t="ov" aria-pressed="true">Overview</button><button class="chip" data-t="od" aria-pressed="false">Orders</button><button class="btn ghost" id="so">Sign out</button></nav>
+<nav id="nv" hidden><button class="chip" data-t="ov" aria-pressed="true">Overview</button><button class="chip" data-t="od" aria-pressed="false">Orders</button><button class="chip" data-t="pr" aria-pressed="false">Products</button><button class="btn ghost" id="so">Sign out</button></nav>
 </div></header>
 <main>
 <section id="lg"><h2>Staff sign in</h2>
@@ -127,9 +130,13 @@ tr[data-id]{cursor:pointer}tr[data-id]:hover{background:var(--sf2)}
 <div id="od" hidden>
 <div class="tools"><select id="fs" aria-label="Status"></select><input id="fq" placeholder="Search reference, name or phone" style="max-width:300px"><input id="fd" type="date" aria-label="From date" style="max-width:170px"></div>
 <div id="ot"></div></div>
+<div id="pr" hidden>
+<div class="tools"><input id="pq" placeholder="Search products" style="max-width:300px"><button class="btn" id="pa1" hidden>Add product</button></div>
+<div id="pt"></div></div>
 </section>
 </main>
 <dialog id="dl"><div class="pad" id="db"></div></dialog>
+<dialog id="pe"><div class="pad" id="pb"></div></dialog>
 
 <script>
 const $=x=>document.querySelector(x),$$=x=>[...document.querySelectorAll(x)];
@@ -142,7 +149,7 @@ const money=n=>'JD '+(+n).toFixed(3).replace(/0$/,'');
 const when=t=>new Date(t).toLocaleString('en-GB',{timeZone:'Asia/Amman',dateStyle:'medium',timeStyle:'short'});
 const day=t=>new Date(t).toLocaleDateString('en-CA',{timeZone:'Asia/Amman'});
 const pill=s=>`<span class="pill ${esc(s)}">${LB[s]||esc(s)}</span>`;
-let C,sess=null,tab='ov',cur=null,dt;
+let C,sess=null,tab='ov',cur=null,dt,E={},PRD=[],CAT=[],isAdmin=false;
 
 // Sign in with Supabase Auth. Every request after that carries the staff member's own token,
 // so the database rules (RLS) decide what this person can read and change.
@@ -164,11 +171,12 @@ function out(msg){
 async function enter(){
  const r=await db('user_roles?select=role&user_id=eq.'+sess.uid);
  if(!r.length)return out('This account does not have staff access.');
+ isAdmin=r.some(x=>x.role==='admin');$('#pa1').hidden=!isAdmin;
  $('#lg').hidden=true;$('#app').hidden=$('#nv').hidden=false;show('ov')}
 
-function show(t){tab=t;$$('#nv [data-t]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t));$('#ov').hidden=t!=='ov';$('#od').hidden=t!=='od';render()}
-async function render(){const box=tab==='ov'?$('#ov'):$('#ot');
- try{await(tab==='ov'?overview():orders())}catch(e){box.textContent='Could not load: '+e.message}}
+function show(t){tab=t;$$('#nv [data-t]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t));$('#ov').hidden=t!=='ov';$('#od').hidden=t!=='od';$('#pr').hidden=t!=='pr';render()}
+async function render(){const box=tab==='ov'?$('#ov'):tab==='od'?$('#ot'):$('#pt');
+ try{await(tab==='ov'?overview():tab==='od'?orders():products())}catch(e){box.textContent='Could not load: '+e.message}}
 
 const table=r=>r.length?`<div class="tbl"><table><thead><tr><th>Order</th><th>Customer</th><th>Type</th><th>Status</th><th>Total</th><th>Placed</th></tr></thead><tbody>${r.map(x=>`<tr data-id="${esc(x.id)}"><td><b>${esc(x.reference)}</b></td><td>${esc(x.customer_name)}</td><td>${esc(x.order_type)}</td><td>${pill(x.status)}</td><td>${money(x.total)}</td><td>${when(x.created_at)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="mu">No orders found.</p>';
 
@@ -228,6 +236,67 @@ $('#db').onclick=async e=>{const b=e.target.closest('[data-a]');if(!b)return;con
 $('#dl').onclick=e=>{if(e.target===e.currentTarget)e.currentTarget.close()};
 document.addEventListener('click',async e=>{const r=e.target.closest('tr[data-id]');if(!r)return;
  try{await detail(r.dataset.id)}catch(x){console.error(x)}});
+
+
+// ===== Products and stock =====
+const slug=s=>(s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'product')+'-'+Date.now().toString(36).slice(-4);
+const invOf=x=>(Array.isArray(x.inventory)?x.inventory[0]:x.inventory)||{};
+async function products(){
+ const [p,c]=await Promise.all([
+  db('products?select=id,name_en,name_ar,description_en,description_ar,base_price,is_available,sort_order,image_path,category_id,inventory(track_stock,quantity,low_stock_threshold)&order=sort_order,name_en'),
+  db('categories?select=id,name_en&order=sort_order')]);
+ PRD=p;CAT=c;
+ const q=$('#pq').value.trim().toLowerCase(),cn=Object.fromEntries(c.map(x=>[x.id,x.name_en]));
+ const r=p.filter(x=>!q||(x.name_en+' '+x.name_ar).toLowerCase().includes(q));
+ $('#pt').innerHTML=r.length?`<div class="tbl"><table><thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Status</th><th>Stock</th></tr></thead><tbody>${r.map(x=>{const i=invOf(x);
+  return `<tr data-p="${esc(x.id)}"><td><b>${esc(x.name_en)}</b> <span class="mu">${esc(x.name_ar)}</span></td><td>${esc(cn[x.category_id]||'')}</td><td>${money(x.base_price)}</td><td>${x.is_available?'<span class="pill">Available</span>':'<span class="pill cancelled">Unavailable</span>'}</td><td>${i.track_stock?i.quantity+(i.quantity<=i.low_stock_threshold?' <span class="pill cancelled">Low</span>':''):'<span class="mu">Not tracked</span>'}</td></tr>`}).join('')}</tbody></table></div>`:'<p class="mu">No products found.</p>'}
+function editProduct(id){
+ const x=id?PRD.find(p=>p.id===id):{},i=invOf(x);E={id,img:x.image_path||null};
+ $('#pb').innerHTML=`<div class="row"><h2 style="font-size:2rem;margin:0">${id?'Edit product':'New product'}</h2><button class="btn ghost x" data-k="x" aria-label="Close">×</button></div>
+ <div id="pf" class="g"${isAdmin?'':' hidden'}><div class="fg">
+ <label class="f">Name (English)<input id="pn1" value="${esc(x.name_en)}"></label><label class="f">Name (Arabic)<input id="pn2" dir="rtl" value="${esc(x.name_ar)}"></label>
+ <label class="f">Description (English)<textarea id="pd1" rows="2">${esc(x.description_en)}</textarea></label><label class="f">Description (Arabic)<textarea id="pd2" rows="2" dir="rtl">${esc(x.description_ar)}</textarea></label>
+ <label class="f">Category<select id="pc">${CAT.map(c=>`<option value="${esc(c.id)}"${c.id===x.category_id?' selected':''}>${esc(c.name_en)}</option>`).join('')}</select></label>
+ <label class="f">Base price (JD)<input id="pp" type="number" min="0" step="0.05" value="${x.base_price??''}"></label>
+ <label class="f">Sort order<input id="po" type="number" value="${x.sort_order??0}"></label>
+ <label class="f">Image (JPG, PNG or WebP, up to 2 MB)<input id="pi" type="file" accept="image/jpeg,image/png,image/webp"></label></div>
+ ${x.image_path?`<p class="mu" style="margin:0">Current image: ${esc(x.image_path)}</p>`:''}
+ <label class="ck"><input id="pa" type="checkbox"${x.is_available!==false?' checked':''}> Available to order</label></div>
+ <label class="ck"><input id="pt1" type="checkbox"${i.track_stock?' checked':''}> Track stock for this product</label>
+ <div class="fg"><label class="f">Stock quantity<input id="pq1" type="number" min="0" step="1" value="${i.quantity??0}"></label><label class="f">Low stock warning at<input id="pw" type="number" min="0" step="1" value="${i.low_stock_threshold??5}"></label></div>
+ <p id="pm" role="alert" style="margin:0;font-weight:600;color:var(--cu)"></p>
+ <div class="row"><button class="btn" data-k="save">Save</button>${id&&isAdmin?'<button class="btn ghost" data-k="del">Delete</button>':''}</div>`;
+ $('#pe').showModal()}
+async function upload(f){
+ const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[f.type],path=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7)+'.'+ext;
+ if(sess.exp-Date.now()<60000)await auth('refresh_token',{refresh_token:sess.rt});
+ const r=await fetch(C.url+'/storage/v1/object/product-images/'+path,{method:'POST',headers:{apikey:C.key,Authorization:'Bearer '+sess.at,'Content-Type':f.type},body:f});
+ if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(j.message||'Image upload failed.')}
+ return path}
+$('#pb').onclick=async e=>{const b=e.target.closest('[data-k]');if(!b)return;const k=b.dataset.k,m=$('#pm');
+ if(k==='x')return $('#pe').close();
+ m.textContent='';
+ try{
+  if(k==='del'){if(!confirm('Delete this product? Past orders keep their names and prices.'))return;await db('products?id=eq.'+E.id,'DELETE')}
+  else{
+   let id=E.id;
+   if(isAdmin){
+    const n1=$('#pn1').value.trim(),n2=$('#pn2').value.trim(),price=parseFloat($('#pp').value),f=$('#pi').files[0];let path=E.img;
+    if(!n1||!n2)throw new Error('Enter the name in English and Arabic.');
+    if(!(price>=0))throw new Error('Enter a valid price.');
+    if(f){if(!/^image\/(jpeg|png|webp)$/.test(f.type)||f.size>2e6)throw new Error('The image must be JPG, PNG or WebP, up to 2 MB.');path=await upload(f)}
+    const row={name_en:n1,name_ar:n2,description_en:$('#pd1').value.trim(),description_ar:$('#pd2').value.trim(),category_id:$('#pc').value,base_price:price,sort_order:parseInt($('#po').value)||0,is_available:$('#pa').checked,image_path:path};
+    if(id){const r=await db('products?id=eq.'+id,'PATCH',row);if(!r.length)throw new Error('You are not allowed to edit products.')}
+    else{row.slug=slug(n1);id=(await db('products','POST',row))[0].id}
+   }
+   const inv={track_stock:$('#pt1').checked,quantity:parseInt($('#pq1').value)||0,low_stock_threshold:parseInt($('#pw').value)||0};
+   const r=await db('inventory?product_id=eq.'+id,'PATCH',inv);if(!r.length)throw new Error('Could not update the stock.')}
+  $('#pe').close();render()}
+ catch(x){m.textContent=x.message}};
+$('#pe').onclick=e=>{if(e.target===e.currentTarget)e.currentTarget.close()};
+document.addEventListener('click',e=>{const r=e.target.closest('tr[data-p]');if(r)editProduct(r.dataset.p)});
+$('#pa1').onclick=()=>editProduct(null);
+$('#pq').oninput=()=>{clearTimeout(dt);dt=setTimeout(render,300)};
 
 $('#fs').innerHTML='<option value="">All statuses</option>'+ST.map(s=>`<option value="${s}">${LB[s]}</option>`).join('');
 $('#fs').onchange=$('#fd').onchange=render;
