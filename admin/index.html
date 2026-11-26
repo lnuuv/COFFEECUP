@@ -107,7 +107,10 @@ tr[data-id]{cursor:pointer}tr[data-id]:hover{background:var(--sf2)}
 .pill{display:inline-block;padding:.1rem .6rem;border-radius:99px;border:1px solid var(--ln);font-size:.85rem}
 .pill.new{background:var(--cb);border-color:var(--cb);color:#090909}.pill.cancelled{color:var(--cu);border-color:var(--cu)}
 .items{list-style:none;padding:0;margin:0;display:grid;gap:8px}
-#dl,#pe,#ge{width:min(620px,calc(100% - 24px))}
+#dl,#pe,#ge,#oe{width:min(720px,calc(100% - 24px))}
+.orow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+.orow .n1,.orow .n2{flex:1 1 140px;width:auto}.orow .pd{width:96px}
+.ogrp{border:1px solid var(--ln);border-radius:8px;padding:12px;margin-bottom:12px}
 .bar,nav{flex-wrap:wrap}nav{justify-content:flex-end}
 .fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .ck{display:flex;align-items:center;gap:8px;font-weight:500}.ck input{width:auto}
@@ -143,6 +146,7 @@ tr[data-id]{cursor:pointer}tr[data-id]:hover{background:var(--sf2)}
 <dialog id="dl"><div class="pad" id="db"></div></dialog>
 <dialog id="pe"><div class="pad" id="pb"></div></dialog>
 <dialog id="ge"><div class="pad" id="gb"></div></dialog>
+<dialog id="oe"><div class="pad" id="ob"></div></dialog>
 
 <script>
 const $=x=>document.querySelector(x),$$=x=>[...document.querySelectorAll(x)];
@@ -271,7 +275,7 @@ function editProduct(id){
  <label class="ck"><input id="pt1" type="checkbox"${i.track_stock?' checked':''}> Track stock for this product</label>
  <div class="fg"><label class="f">Stock quantity<input id="pq1" type="number" min="0" step="1" value="${i.quantity??0}"></label><label class="f">Low stock warning at<input id="pw" type="number" min="0" step="1" value="${i.low_stock_threshold??5}"></label></div>
  <p id="pm" role="alert" style="margin:0;font-weight:600;color:var(--cu)"></p>
- <div class="row"><button class="btn" data-k="save">Save</button>${id&&isAdmin?'<button class="btn ghost" data-k="del">Delete</button>':''}</div>`;
+ <div class="row"><button class="btn" data-k="save">Save</button>${id&&isAdmin?'<button class="btn ghost" data-k="opts">Sizes and options</button><button class="btn ghost" data-k="del">Delete</button>':''}${!id&&isAdmin?'<span class="mu">Save first, then add sizes and options.</span>':''}</div>`;
  $('#pe').showModal()}
 async function upload(f){
  const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[f.type],path=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7)+'.'+ext;
@@ -281,6 +285,7 @@ async function upload(f){
  return path}
 $('#pb').onclick=async e=>{const b=e.target.closest('[data-k]');if(!b)return;const k=b.dataset.k,m=$('#pm');
  if(k==='x')return $('#pe').close();
+ if(k==='opts')return openOpts(E.id).catch(x=>{m.textContent=friendly(x.message)});
  m.textContent='';
  try{
   if(k==='del'){if(!confirm('Delete this product? Past orders keep their names and prices.'))return;await db('products?id=eq.'+E.id,'DELETE')}
@@ -390,6 +395,68 @@ $('#sv').onclick=async e=>{if(e.target.id!=='ss')return;const m=$('#sm'),n=id=>p
   for(const [k,v] of Object.entries(upd)){const r=await db('store_settings?key=eq.'+k,'PATCH',{value:v});if(!r.length)throw new Error('You are not allowed to change settings.')}
   m.textContent='Saved.';m.style.color='var(--tx)'}
  catch(x){m.textContent=friendly(x.message);m.style.color='var(--cu)'}};
+
+
+// ===== Sizes and option groups for one product (admin only) =====
+let OP=null;
+const inp=(c,ph,v,x='')=>`<input class="${c}" placeholder="${ph}" value="${esc(v)}"${x}>`;
+async function openOpts(pid){
+ const [v,g]=await Promise.all([
+  db('product_variants?select=*&product_id=eq.'+pid+'&order=sort_order'),
+  db('option_groups?select=*,product_options(*)&product_id=eq.'+pid+'&order=sort_order')]);
+ g.forEach(x=>x.options=x.product_options.sort((a,b)=>a.sort_order-b.sort_order));
+ OP={pid,v,g,name:(PRD.find(p=>p.id===pid)||{}).name_en||'',delV:[],delG:[],delO:[]};
+ drawOpts();if(!$('#oe').open)$('#oe').showModal()}
+function drawOpts(){
+ const vr=OP.v.map((x,i)=>`<div class="orow" data-v="${i}">${inp('n1','Name (English)',x.name_en)}${inp('n2','Name (Arabic)',x.name_ar,' dir="rtl"')}<input class="pd" type="number" min="0" step="0.05" placeholder="+ JD" title="Extra price (JD)" value="${x.price_delta??0}"><label class="ck"><input class="df" type="checkbox"${x.is_default?' checked':''}> Default</label><button class="lnk" data-o="rv" data-i="${i}">Remove</button></div>`).join('');
+ const gr=OP.g.map((g,gi)=>`<div class="ogrp" data-g="${gi}"><div class="orow">${inp('n1','Group name (English)',g.name_en)}${inp('n2','Group name (Arabic)',g.name_ar,' dir="rtl"')}<label class="ck"><input class="rq" type="checkbox"${g.is_required?' checked':''}> Required</label><button class="lnk" data-o="rg" data-i="${gi}">Remove group</button></div>`
+  +g.options.map((o,oi)=>`<div class="orow oo" data-j="${oi}">${inp('n1','Option (English)',o.name_en)}${inp('n2','Option (Arabic)',o.name_ar,' dir="rtl"')}<input class="pd" type="number" min="0" step="0.05" placeholder="+ JD" title="Extra price (JD)" value="${o.price_delta??0}"><label class="ck"><input class="df" type="checkbox"${o.is_default?' checked':''}> Default</label><label class="ck"><input class="av" type="checkbox"${o.is_available!==false?' checked':''}> On</label><button class="lnk" data-o="ro" data-g="${gi}" data-i="${oi}">Remove</button></div>`).join('')
+  +`<button class="btn ghost" data-o="ao" data-i="${gi}">Add option</button></div>`).join('');
+ $('#ob').innerHTML=`<div class="row"><h2 style="font-size:2rem;margin:0">Sizes and options</h2><button class="btn ghost x" data-o="x" aria-label="Close">×</button></div>
+ <p class="mu" style="margin:0">${esc(OP.name)}. The price on each line is added to the base price. Customers pick one choice per group.</p>
+ <h3>Sizes</h3>${vr||'<p class="mu">No sizes.</p>'}<div><button class="btn ghost" data-o="av">Add size</button></div>
+ <h3>Option groups (milk, extra shots, sweetness...)</h3>${gr||'<p class="mu">No option groups.</p>'}<div><button class="btn ghost" data-o="ag">Add option group</button></div>
+ <p id="om" role="alert" style="margin:0;font-weight:600;color:var(--cu)"></p><div><button class="btn" data-o="save">Save sizes and options</button></div>`}
+function pull(){
+ const rd=el=>({name_en:el.querySelector('.n1').value.trim(),name_ar:el.querySelector('.n2').value.trim(),price_delta:parseFloat(el.querySelector('.pd').value)||0,is_default:el.querySelector('.df').checked});
+ $$('#ob [data-v]').forEach(el=>Object.assign(OP.v[+el.dataset.v],rd(el)));
+ $$('#ob .ogrp').forEach(gel=>{const g=OP.g[+gel.dataset.g],h=gel.querySelector('.orow');
+  Object.assign(g,{name_en:h.querySelector('.n1').value.trim(),name_ar:h.querySelector('.n2').value.trim(),is_required:h.querySelector('.rq').checked});
+  gel.querySelectorAll('.oo').forEach(el=>Object.assign(g.options[+el.dataset.j],rd(el),{is_available:el.querySelector('.av').checked}))})}
+async function saveOpts(){const m=$('#om');m.textContent='';m.style.color='var(--cu)';
+ try{
+  const all=[...OP.v,...OP.g.flatMap(g=>g.options)],dups=l=>l.filter(x=>x.is_default).length>1;
+  if(all.some(x=>!x.name_en||!x.name_ar)||OP.g.some(g=>!g.name_en||!g.name_ar))throw new Error('Every size, group and option needs a name in English and Arabic.');
+  if(all.some(x=>x.price_delta<0))throw new Error('Extra prices cannot be negative.');
+  if(dups(OP.v)||OP.g.some(g=>dups(g.options)))throw new Error('Only one default is allowed in each list.');
+  const pid=OP.pid,w=(t,x,row)=>x.id?db(t+'?id=eq.'+x.id,'PATCH',row):db(t,'POST',row);
+  for(const id of OP.delV)await db('product_variants?id=eq.'+id,'DELETE');
+  for(const id of OP.delG)await db('option_groups?id=eq.'+id,'DELETE');
+  for(const id of OP.delO)await db('product_options?id=eq.'+id,'DELETE');
+  // Clear the old defaults first, because the database allows only one default per list.
+  await db('product_variants?product_id=eq.'+pid,'PATCH',{is_default:false});
+  const gids=OP.g.filter(g=>g.id).map(g=>g.id);
+  if(gids.length)await db('product_options?group_id=in.('+gids.join(',')+')','PATCH',{is_default:false});
+  for(const [n,x] of OP.v.entries())await w('product_variants',x,{product_id:pid,name_en:x.name_en,name_ar:x.name_ar,price_delta:x.price_delta,is_default:x.is_default,sort_order:n+1});
+  for(const [gn,g] of OP.g.entries()){
+   const key=g.key||((g.name_en.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'group')+'-'+Math.random().toString(36).slice(2,5));
+   const r=await w('option_groups',g,{product_id:pid,key,name_en:g.name_en,name_ar:g.name_ar,selection:'single',is_required:g.is_required,sort_order:gn+1});
+   const gid=g.id||r[0].id;
+   for(const [n,o] of g.options.entries())await w('product_options',o,{group_id:gid,name_en:o.name_en,name_ar:o.name_ar,price_delta:o.price_delta,is_default:o.is_default,is_available:o.is_available,sort_order:n+1})}
+  await openOpts(pid);$('#om').textContent='Saved.';$('#om').style.color='var(--tx)'}
+ catch(x){m.textContent=friendly(x.message)}}
+$('#ob').onclick=async e=>{const b=e.target.closest('[data-o]');if(!b)return;const o=b.dataset.o,i=+b.dataset.i;
+ if(o==='x')return $('#oe').close();
+ pull();
+ if(o==='av')OP.v.push({name_en:'',name_ar:'',price_delta:0,is_default:false});
+ else if(o==='rv'){const [x]=OP.v.splice(i,1);if(x.id)OP.delV.push(x.id)}
+ else if(o==='ag')OP.g.push({name_en:'',name_ar:'',is_required:false,options:[]});
+ else if(o==='rg'){const [x]=OP.g.splice(i,1);if(x.id)OP.delG.push(x.id)}
+ else if(o==='ao')OP.g[i].options.push({name_en:'',name_ar:'',price_delta:0,is_default:false,is_available:true});
+ else if(o==='ro'){const [x]=OP.g[+b.dataset.g].options.splice(i,1);if(x.id)OP.delO.push(x.id)}
+ else if(o==='save')return saveOpts();
+ drawOpts()};
+$('#oe').onclick=e=>{if(e.target===e.currentTarget)e.currentTarget.close()};
 
 $('#fs').innerHTML='<option value="">All statuses</option>'+ST.map(s=>`<option value="${s}">${LB[s]}</option>`).join('');
 $('#fs').onchange=$('#fd').onchange=render;
