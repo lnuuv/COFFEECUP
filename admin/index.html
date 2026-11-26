@@ -107,7 +107,8 @@ tr[data-id]{cursor:pointer}tr[data-id]:hover{background:var(--sf2)}
 .pill{display:inline-block;padding:.1rem .6rem;border-radius:99px;border:1px solid var(--ln);font-size:.85rem}
 .pill.new{background:var(--cb);border-color:var(--cb);color:#090909}.pill.cancelled{color:var(--cu);border-color:var(--cu)}
 .items{list-style:none;padding:0;margin:0;display:grid;gap:8px}
-#dl,#pe{width:min(620px,calc(100% - 24px))}
+#dl,#pe,#ge{width:min(620px,calc(100% - 24px))}
+.bar,nav{flex-wrap:wrap}nav{justify-content:flex-end}
 .fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .ck{display:flex;align-items:center;gap:8px;font-weight:500}.ck input{width:auto}
 @media(max-width:560px){.fg{grid-template-columns:1fr}}
@@ -116,7 +117,7 @@ tr[data-id]{cursor:pointer}tr[data-id]:hover{background:var(--sf2)}
 </head>
 <body>
 <header><div class="bar"><span class="brand">COFFEE<b>CUP</b><small>Admin</small></span>
-<nav id="nv" hidden><button class="chip" data-t="ov" aria-pressed="true">Overview</button><button class="chip" data-t="od" aria-pressed="false">Orders</button><button class="chip" data-t="pr" aria-pressed="false">Products</button><button class="btn ghost" id="so">Sign out</button></nav>
+<nav id="nv" hidden><button class="chip" data-t="ov" aria-pressed="true">Overview</button><button class="chip" data-t="od" aria-pressed="false">Orders</button><button class="chip" data-t="pr" aria-pressed="false">Products</button><button class="chip" data-t="ct" data-adm hidden aria-pressed="false">Categories</button><button class="chip" data-t="dc" data-adm hidden aria-pressed="false">Discounts</button><button class="btn ghost" id="so">Sign out</button></nav>
 </div></header>
 <main>
 <section id="lg"><h2>Staff sign in</h2>
@@ -133,10 +134,14 @@ tr[data-id]{cursor:pointer}tr[data-id]:hover{background:var(--sf2)}
 <div id="pr" hidden>
 <div class="tools"><input id="pq" placeholder="Search products" style="max-width:300px"><button class="btn" id="pa1" hidden>Add product</button></div>
 <div id="pt"></div></div>
+<div id="gn" hidden>
+<div class="tools"><button class="btn" id="ga">Add</button></div>
+<div id="gt"></div></div>
 </section>
 </main>
 <dialog id="dl"><div class="pad" id="db"></div></dialog>
 <dialog id="pe"><div class="pad" id="pb"></div></dialog>
+<dialog id="ge"><div class="pad" id="gb"></div></dialog>
 
 <script>
 const $=x=>document.querySelector(x),$$=x=>[...document.querySelectorAll(x)];
@@ -171,12 +176,12 @@ function out(msg){
 async function enter(){
  const r=await db('user_roles?select=role&user_id=eq.'+sess.uid);
  if(!r.length)return out('This account does not have staff access.');
- isAdmin=r.some(x=>x.role==='admin');$('#pa1').hidden=!isAdmin;
+ isAdmin=r.some(x=>x.role==='admin');$('#pa1').hidden=!isAdmin;$$('[data-adm]').forEach(b=>b.hidden=!isAdmin);
  $('#lg').hidden=true;$('#app').hidden=$('#nv').hidden=false;show('ov')}
 
-function show(t){tab=t;$$('#nv [data-t]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t));$('#ov').hidden=t!=='ov';$('#od').hidden=t!=='od';$('#pr').hidden=t!=='pr';render()}
-async function render(){const box=tab==='ov'?$('#ov'):tab==='od'?$('#ot'):$('#pt');
- try{await(tab==='ov'?overview():tab==='od'?orders():products())}catch(e){box.textContent='Could not load: '+e.message}}
+function show(t){tab=t;$$('#nv [data-t]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t));$('#ov').hidden=t!=='ov';$('#od').hidden=t!=='od';$('#pr').hidden=t!=='pr';$('#gn').hidden=!GEN[t];render()}
+async function render(){const box=GEN[tab]?$('#gt'):tab==='ov'?$('#ov'):tab==='od'?$('#ot'):$('#pt');
+ try{await(GEN[tab]?gen():tab==='ov'?overview():tab==='od'?orders():products())}catch(e){box.textContent='Could not load: '+e.message}}
 
 const table=r=>r.length?`<div class="tbl"><table><thead><tr><th>Order</th><th>Customer</th><th>Type</th><th>Status</th><th>Total</th><th>Placed</th></tr></thead><tbody>${r.map(x=>`<tr data-id="${esc(x.id)}"><td><b>${esc(x.reference)}</b></td><td>${esc(x.customer_name)}</td><td>${esc(x.order_type)}</td><td>${pill(x.status)}</td><td>${money(x.total)}</td><td>${when(x.created_at)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="mu">No orders found.</p>';
 
@@ -297,6 +302,60 @@ $('#pe').onclick=e=>{if(e.target===e.currentTarget)e.currentTarget.close()};
 document.addEventListener('click',e=>{const r=e.target.closest('tr[data-p]');if(r)editProduct(r.dataset.p)});
 $('#pa1').onclick=()=>editProduct(null);
 $('#pq').oninput=()=>{clearTimeout(dt);dt=setTimeout(render,300)};
+
+
+// ===== Categories and discount codes (admin only, the database enforces it) =====
+const GEN={ct:'categories',dc:'discount_codes'};
+const flag=b=>b?'<span class="pill">Active</span>':'<span class="pill cancelled">Off</span>';
+const friendly=m=>/foreign key/.test(m)?'This item is still in use (for example a category that still has products), so it cannot be deleted.':/duplicate key/.test(m)?'That value already exists.':/check constraint/.test(m)?'One of the values is not allowed (for example a percent above 100, or a code shorter than 3 characters).':/row-level security|permission denied/.test(m)?'You are not allowed to do this.':m;
+const FM={
+ categories:{title:'category',sel:'id,slug,name_en,name_ar,sort_order,is_active',order:'sort_order',cols:['Category','Order','Status'],
+  row:x=>[`<b>${esc(x.name_en)}</b> <span class="mu">${esc(x.name_ar)}</span>`,`${x.sort_order} <button class="lnk" data-mv="-1" data-id="${esc(x.id)}" aria-label="Move up">▲</button><button class="lnk" data-mv="1" data-id="${esc(x.id)}" aria-label="Move down">▼</button>`,flag(x.is_active)],
+  f:[['name_en','Name (English)','text'],['name_ar','Name (Arabic)','text','rtl'],['sort_order','Sort order','int'],['is_active','Active (shown on the menu)','bool']],
+  make:r=>({slug:slug(r.name_en)})},
+ discount_codes:{title:'discount code',sel:'id,code,type,value,min_order,starts_at,expires_at,max_uses,used_count,is_active',order:'created_at.desc',cols:['Code','Discount','Minimum order','Used','Expires','Status'],
+  row:x=>[`<b>${esc(x.code)}</b>`,x.type==='percent'?(+x.value)+'%':money(x.value),money(x.min_order),x.used_count+(x.max_uses?' / '+x.max_uses:''),x.expires_at?when(x.expires_at):'Never',flag(x.is_active)],
+  f:[['code','Code (3 to 32 characters)','text','up'],['type','Type','sel',[['percent','Percent'],['fixed','Fixed amount (JD)']]],['value','Value (percent, or JD)','num'],['min_order','Minimum order (JD)','num'],['expires_at','Expires at the end of','date'],['max_uses','Max uses (empty means unlimited)','int?'],['is_active','Active','bool']]}
+};
+let GD=[],GI=null;
+async function gen(){const k=GEN[tab],F=FM[k];
+ GD=await db(k+'?select='+F.sel+'&order='+F.order);$('#ga').textContent='Add '+F.title;
+ $('#gt').innerHTML=GD.length?`<div class="tbl"><table><thead><tr>${F.cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${GD.map(x=>`<tr data-g="${esc(x.id)}">${F.row(x).map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:'<p class="mu">Nothing here yet.</p>'}
+function gform(id){const F=FM[GEN[tab]],x=id?GD.find(r=>r.id===id):{};GI=id;
+ $('#gb').innerHTML=`<div class="row"><h2 style="font-size:2rem;margin:0">${id?'Edit':'New'} ${F.title}</h2><button class="btn ghost x" data-k="x" aria-label="Close">×</button></div><div class="fg">`
+ +F.f.map(([n,l,t,o])=>{const v=x[n];
+  if(t==='bool')return `<label class="ck"><input id="g_${n}" type="checkbox"${v===undefined||v?' checked':''}> ${l}</label>`;
+  if(t==='sel')return `<label class="f">${l}<select id="g_${n}">${o.map(([a,b])=>`<option value="${a}"${a===v?' selected':''}>${b}</option>`).join('')}</select></label>`;
+  const ty=t==='date'?'date':(t[0]==='i'||t==='num')?'number':'text';
+  return `<label class="f">${l}<input id="g_${n}" type="${ty}"${t==='num'?' step="0.05" min="0"':t[0]==='i'?' step="1" min="0"':''}${o==='rtl'?' dir="rtl"':''} value="${esc(t==='date'?(v?day(v):''):v??'')}"></label>`}).join('')
+ +`</div><p id="gm" role="alert" style="margin:0;font-weight:600;color:var(--cu)"></p><div class="row"><button class="btn" data-k="save">Save</button>${id?'<button class="btn ghost" data-k="del">Delete</button>':''}</div>`;
+ $('#ge').showModal()}
+$('#gb').onclick=async e=>{const b=e.target.closest('[data-k]');if(!b)return;const k=GEN[tab],F=FM[k],m=$('#gm');
+ if(b.dataset.k==='x')return $('#ge').close();
+ m.textContent='';
+ try{
+  if(b.dataset.k==='del'){if(!confirm('Delete this '+F.title+'?'))return;await db(k+'?id=eq.'+GI,'DELETE')}
+  else{const row={};
+   for(const [n,l,t,o] of F.f){const el=$('#g_'+n);let v=t==='bool'?el.checked:el.value.trim();
+    if(t==='text'){if(!v)throw new Error('Fill in: '+l);if(o==='up')v=v.toUpperCase()}
+    else if(t==='int'||t==='int?'){v=v===''?(t==='int?'?null:0):parseInt(v);if(v!==null&&!(v>=0))throw new Error('Enter a valid number: '+l)}
+    else if(t==='num'){v=parseFloat(v);if(!(v>=0))throw new Error('Enter a valid number: '+l)}
+    else if(t==='date')v=v?v+'T23:59:59+03:00':null;
+    row[n]=v}
+   if(F.make&&!GI)Object.assign(row,F.make(row));
+   const r=GI?await db(k+'?id=eq.'+GI,'PATCH',row):await db(k,'POST',row);
+   if(!r.length)throw new Error('You are not allowed to do this.')}
+  $('#ge').close();render()}
+ catch(x){m.textContent=friendly(x.message)}};
+async function move(id,dir){
+ const L=[...GD].sort((a,b)=>a.sort_order-b.sort_order),i=L.findIndex(x=>x.id===id),j=i+dir;if(j<0||j>=L.length)return;
+ [L[i],L[j]]=[L[j],L[i]];
+ await Promise.all(L.map((x,n)=>x.sort_order===n+1?null:db('categories?id=eq.'+x.id,'PATCH',{sort_order:n+1})));render()}
+document.addEventListener('click',async e=>{
+ const mv=e.target.closest('[data-mv]');if(mv){try{await move(mv.dataset.id,+mv.dataset.mv)}catch(x){console.error(x)}return}
+ const r=e.target.closest('tr[data-g]');if(r)gform(r.dataset.g)});
+$('#ga').onclick=()=>gform(null);
+$('#ge').onclick=e=>{if(e.target===e.currentTarget)e.currentTarget.close()};
 
 $('#fs').innerHTML='<option value="">All statuses</option>'+ST.map(s=>`<option value="${s}">${LB[s]}</option>`).join('');
 $('#fs').onchange=$('#fd').onchange=render;
