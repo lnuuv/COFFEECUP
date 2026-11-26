@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>COFFEECUP Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F8F6F2;--sf:#fff;--sf2:#F2E9DC;--tx:#171717;--mu:#5f5a54;--ln:#d8c5ae;--cu:#8f5420;--cb:#D18A4A;--hd:"Barlow Condensed","Arial Narrow",sans-serif;--bd:"Barlow",system-ui,sans-serif;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#090909;--sf:#171717;--sf2:#242424;--tx:#F2E9DC;--mu:#929292;--ln:#333;--cu:#D18A4A}}
+:root[data-theme="dark"]{--bg:#090909;--sf:#171717;--sf2:#242424;--tx:#F2E9DC;--mu:#929292;--ln:#333;--cu:#D18A4A}
+:root[lang=ar]{--hd:"Cairo",sans-serif;--bd:"Cairo",sans-serif}
+:root[lang=ar] *{letter-spacing:0!important}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 72px)}
+@media(prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:400 1rem/1.55 var(--bd)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--cb);outline-offset:2px}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--ln)}
+.bar,.hero,section{max-width:1120px;margin:0 auto}
+.bar{padding:12px 20px;display:flex;align-items:center;gap:16px}
+.logo{display:flex;align-items:center;flex:none;text-decoration:none}.logo img{display:block;width:135px;height:45px;object-fit:contain}
+nav{margin-inline-start:auto;display:flex;align-items:center;gap:14px}
+nav a{color:var(--tx);text-decoration:none;font-weight:500}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;background:var(--cb);color:#090909;border:1px solid var(--cb);border-radius:6px;padding:.65rem 1.1rem;font:600 1rem var(--bd);cursor:pointer;text-decoration:none}
+.btn:hover{filter:brightness(1.08)}.btn:disabled{opacity:.45;cursor:not-allowed}
+.ghost{background:transparent;color:var(--tx);border-color:var(--ln)}
+.w{width:100%}
+#cnt{display:inline-grid;place-items:center;min-width:1.5rem;height:1.5rem;border-radius:99px;background:#090909;color:#F2E9DC;font-size:.85rem}
+.hero{padding:56px 20px;display:grid;grid-template-columns:1.2fr 1fr;gap:40px;align-items:center}
+.hero>div{animation:up .7s both}.hero>div+div{animation-delay:.15s}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
+.section-head h2{margin:0}.section-head .btn{white-space:nowrap}
+@keyframes up{from{opacity:0;transform:translateY(14px)}}
+h1{font:700 clamp(3rem,8.5vw,6rem)/.92 var(--hd);text-transform:uppercase;margin:0 0 .35em}
+.lead{color:var(--mu);font-size:1.15rem;max-width:32ch;margin:0 0 1.5rem}
+.lc{background:#000;border-radius:14px;padding:22px;border:1px solid #49331f}
+.lc img{width:100%;height:auto;display:block}
+section{padding:40px 20px}
+h2{font:700 2.4rem/1 var(--hd);text-transform:uppercase;margin:0 0 18px}
+.tools{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+.chips{flex-basis:100%;display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.chip{border:1px solid var(--ln);background:transparent;color:var(--tx);border-radius:99px;padding:.4rem .95rem;cursor:pointer;white-space:nowrap;font:500 .95rem var(--bd)}
+.chip[aria-pressed=true]{background:var(--cb);border-color:var(--cb);color:#090909}
+input:not([type=radio]),textarea{font:inherit;color:var(--tx);background:var(--sf);border:1px solid var(--ln);border-radius:6px;padding:.6rem .8rem;width:100%}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.card{background:var(--sf);border:1px solid var(--ln);border-radius:8px;overflow:hidden;display:flex;flex-direction:column}
+.card:hover{border-color:var(--cb)}
+.art{aspect-ratio:4/3;background:var(--sf2);display:grid;place-items:center;color:var(--cu);position:relative;overflow:hidden}
+.art img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease}
+.card:hover .art img{transform:scale(1.05)}
+.art svg{width:36%;height:auto}
+.art.sm{width:48px;height:48px;aspect-ratio:auto;border-radius:6px;flex:none}.art.sm svg{width:60%}
+.cb{padding:14px;display:flex;flex-direction:column;gap:6px;flex:1}
+.cb h3{font:700 1.35rem var(--hd);margin:0}.cb p{color:var(--mu);margin:0;font-size:.92rem;flex:1}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.mu{color:var(--mu);font-size:.9rem}.tag{color:var(--mu);font-weight:600}
+.three{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px}
+.three>div{border-top:2px solid var(--cb);padding-top:14px}
+.three h3{font:700 1.5rem var(--hd);margin:0 0 6px}.three p{margin:0;color:var(--mu)}
+footer{border-top:1px solid var(--ln);padding:28px 20px;text-align:center;color:var(--mu);font-size:.9rem}
+dialog{background:var(--sf);color:var(--tx);border:1px solid var(--ln);border-radius:12px;padding:0;width:min(480px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+dialog.dr{margin-block:0;margin-inline:auto 0;height:100%;max-height:100%;border-radius:0;width:min(420px,100%)}
+.pad{padding:20px;display:grid;gap:14px;align-content:start}
+.g{display:grid;gap:14px}
+.x{padding:.3rem .75rem}
+.opts{display:flex;flex-wrap:wrap;gap:8px;border:0;padding:0;margin:0}
+.opts label{position:relative;border:1px solid var(--ln);border-radius:6px;padding:.45rem .8rem;cursor:pointer}
+.opts input{position:absolute;opacity:0;pointer-events:none}
+.opts label:has(:checked){background:var(--cb);border-color:var(--cb);color:#090909}
+.opts label:has(:focus-visible){outline:2px solid var(--cb);outline-offset:2px}
+fieldset{border:0;padding:0;margin:0}legend{font-weight:600;margin-bottom:6px;padding:0}
+.qty{display:inline-flex;align-items:center;border:1px solid var(--ln);border-radius:6px}
+.qty b{min-width:1.8rem;text-align:center}
+.qty button{background:none;border:0;color:var(--tx);width:34px;height:34px;font-size:1.2rem;cursor:pointer}
+.li{display:grid;grid-template-columns:48px 1fr auto;gap:12px;padding:12px 0;border-bottom:1px solid var(--ln)}
+.lnk{background:none;border:0;color:var(--cu);cursor:pointer;text-decoration:underline;font:inherit;padding:4px 8px}
+.f{display:grid;gap:4px;font-weight:500}
+#er{margin:0;font-weight:600;color:var(--cu)}
+pre{white-space:pre-wrap;background:var(--sf2);padding:10px;border-radius:6px;font-size:.8rem;direction:ltr;text-align:left;margin:0}
+.sk{min-height:280px;background:linear-gradient(90deg,var(--sf),var(--sf2),var(--sf));background-size:200% 100%;animation:sh 1.3s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+.steps{list-style:none;padding:0;margin:0;display:grid;gap:8px;max-width:420px}
+.steps li{padding:.55rem .9rem;border:1px solid var(--ln);border-radius:6px;color:var(--mu)}
+.steps li.done{color:var(--tx)}.steps li.now{background:var(--cb);border-color:var(--cb);color:#090909;font-weight:600}
+.cx{color:var(--cu);font-weight:600}
+@media(max-width:760px){.hero{grid-template-columns:1fr;padding-top:28px}.lc{order:-1;max-width:340px}}
+@media(max-width:560px){nav a{display:none}}
+@media(max-width:420px){.section-head{align-items:flex-start;flex-direction:column}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+select{font:inherit;color:var(--tx);background:var(--sf);border:1px solid var(--ln);border-radius:6px;padding:.6rem .8rem}
+.brand{font:700 1.6rem var(--hd);letter-spacing:.05em}.brand b{color:var(--cu)}
+.brand small{font:500 .85rem var(--bd);color:var(--mu);letter-spacing:0;margin-inline-start:6px}
+h3{font:700 1.3rem var(--hd);margin:1.2rem 0 .5rem}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.stat{background:var(--sf);border:1px solid var(--ln);border-radius:8px;padding:14px}
+.stat b{display:block;font:700 2rem/1.1 var(--hd);margin-top:4px}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px}
+.tbl{overflow-x:auto}table{width:100%;border-collapse:collapse}
+th,td{text-align:start;padding:.6rem .8rem;border-bottom:1px solid var(--ln);white-space:nowrap}
+th{color:var(--mu);font-weight:600;font-size:.85rem}
+tr[data-id]{cursor:pointer}tr[data-id]:hover{background:var(--sf2)}
+.pill{display:inline-block;padding:.1rem .6rem;border-radius:99px;border:1px solid var(--ln);font-size:.85rem}
+.pill.new{background:var(--cb);border-color:var(--cb);color:#090909}.pill.cancelled{color:var(--cu);border-color:var(--cu)}
+.items{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+#dl{width:min(620px,calc(100% - 24px))}
+@media(max-width:560px){nav .btn{padding:.5rem .7rem}}
+</style>
+</head>
+<body>
+<header><div class="bar"><span class="brand">COFFEE<b>CUP</b><small>Admin</small></span>
+<nav id="nv" hidden><button class="chip" data-t="ov" aria-pressed="true">Overview</button><button class="chip" data-t="od" aria-pressed="false">Orders</button><button class="btn ghost" id="so">Sign out</button></nav>
+</div></header>
+<main>
+<section id="lg"><h2>Staff sign in</h2>
+<form id="lf" class="g" style="max-width:380px" novalidate>
+<label class="f">Email<input name="email" type="email" autocomplete="username" required></label>
+<label class="f">Password<input name="password" type="password" autocomplete="current-password" required></label>
+<p id="le" role="alert" style="margin:0;font-weight:600;color:var(--cu)"></p>
+<button class="btn">Sign in</button></form></section>
+<section id="app" hidden>
+<div id="ov"></div>
+<div id="od" hidden>
+<div class="tools"><select id="fs" aria-label="Status"></select><input id="fq" placeholder="Search reference, name or phone" style="max-width:300px"><input id="fd" type="date" aria-label="From date" style="max-width:170px"></div>
+<div id="ot"></div></div>
+</section>
+</main>
+<dialog id="dl"><div class="pad" id="db"></div></dialog>
+
+<script>
+const $=x=>document.querySelector(x),$$=x=>[...document.querySelectorAll(x)];
+// Every value that comes from the database goes through esc() before it is put on the page.
+const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ST=['new','confirmed','preparing','ready','out_for_delivery','completed','cancelled'];
+const LB={new:'New',confirmed:'Confirmed',preparing:'Preparing',ready:'Ready',out_for_delivery:'Out for delivery',completed:'Completed',cancelled:'Cancelled'};
+const ERR={order_closed:'This order is closed. Completed and cancelled orders cannot change status.'};
+const money=n=>'JD '+(+n).toFixed(3).replace(/0$/,'');
+const when=t=>new Date(t).toLocaleString('en-GB',{timeZone:'Asia/Amman',dateStyle:'medium',timeStyle:'short'});
+const day=t=>new Date(t).toLocaleDateString('en-CA',{timeZone:'Asia/Amman'});
+const pill=s=>`<span class="pill ${esc(s)}">${LB[s]||esc(s)}</span>`;
+let C,sess=null,tab='ov',cur=null,dt;
+
+// Sign in with Supabase Auth. Every request after that carries the staff member's own token,
+// so the database rules (RLS) decide what this person can read and change.
+async function auth(grant,body){
+ const r=await fetch(C.url+'/auth/v1/token?grant_type='+grant,{method:'POST',headers:{apikey:C.key,'Content-Type':'application/json'},body:JSON.stringify(body)});
+ const j=await r.json().catch(()=>({}));
+ if(!r.ok)throw new Error(j.error_description||j.msg||j.message||'Sign-in failed');
+ sess={at:j.access_token,rt:j.refresh_token,exp:Date.now()+j.expires_in*1000,uid:j.user.id};
+ try{sessionStorage.setItem('cc_admin',JSON.stringify(sess))}catch(e){}}
+async function db(path,method='GET',body){
+ if(sess.exp-Date.now()<60000)await auth('refresh_token',{refresh_token:sess.rt});
+ const r=await fetch(C.url+'/rest/v1/'+path,{method,headers:{apikey:C.key,Authorization:'Bearer '+sess.at,'Content-Type':'application/json',Prefer:'return=representation'},body:body?JSON.stringify(body):undefined});
+ const j=await r.json().catch(()=>null);
+ if(!r.ok)throw new Error((j&&j.message)||'HTTP '+r.status);return j}
+function out(msg){
+ if(sess)fetch(C.url+'/auth/v1/logout',{method:'POST',headers:{apikey:C.key,Authorization:'Bearer '+sess.at}}).catch(()=>{});
+ sess=null;try{sessionStorage.removeItem('cc_admin')}catch(e){}
+ $('#app').hidden=$('#nv').hidden=true;$('#lg').hidden=false;$('#le').textContent=msg||''}
+async function enter(){
+ const r=await db('user_roles?select=role&user_id=eq.'+sess.uid);
+ if(!r.length)return out('This account does not have staff access.');
+ $('#lg').hidden=true;$('#app').hidden=$('#nv').hidden=false;show('ov')}
+
+function show(t){tab=t;$$('#nv [data-t]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t));$('#ov').hidden=t!=='ov';$('#od').hidden=t!=='od';render()}
+async function render(){const box=tab==='ov'?$('#ov'):$('#ot');
+ try{await(tab==='ov'?overview():orders())}catch(e){box.textContent='Could not load: '+e.message}}
+
+const table=r=>r.length?`<div class="tbl"><table><thead><tr><th>Order</th><th>Customer</th><th>Type</th><th>Status</th><th>Total</th><th>Placed</th></tr></thead><tbody>${r.map(x=>`<tr data-id="${esc(x.id)}"><td><b>${esc(x.reference)}</b></td><td>${esc(x.customer_name)}</td><td>${esc(x.order_type)}</td><td>${pill(x.status)}</td><td>${money(x.total)}</td><td>${when(x.created_at)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="mu">No orders found.</p>';
+
+// All numbers below are calculated from real database rows.
+async function overview(){
+ const [o,it,ls]=await Promise.all([
+  db('orders?select=id,reference,status,total,created_at,customer_name,order_type&order=created_at.desc&limit=1000'),
+  db('order_items?select=order_id,product_name_en,quantity&limit=5000'),
+  db('low_stock?select=name_en,quantity,low_stock_threshold')]);
+ const live=o.filter(x=>x.status!=='cancelled'),rev=live.reduce((t,x)=>t+ +x.total,0),td=day(Date.now());
+ const dead=new Set(o.filter(x=>x.status==='cancelled').map(x=>x.id)),pop={};
+ it.forEach(i=>{if(!dead.has(i.order_id))pop[i.product_name_en]=(pop[i.product_name_en]||0)+i.quantity});
+ const top=Object.entries(pop).sort((a,b)=>b[1]-a[1]).slice(0,5);
+ const card=(l,v)=>`<div class="stat"><span class="mu">${l}</span><b>${v}</b></div>`;
+ $('#ov').innerHTML=`<div class="stats">`+card('Total orders',o.length)+card("Today's orders",o.filter(x=>day(x.created_at)===td).length)
+  +card('Revenue (not cancelled)',money(rev))+card('Average order',money(live.length?rev/live.length:0))
+  +card('Pending',o.filter(x=>['new','confirmed','preparing'].includes(x.status)).length)+`</div>`
+  +`<div class="two"><div><h3>Popular products</h3>${top.length?`<ol>${top.map(([n,q])=>`<li>${esc(n)} <span class="mu">× ${q}</span></li>`).join('')}</ol>`:'<p class="mu">No orders yet.</p>'}</div>`
+  +`<div><h3>Low stock</h3>${ls.length?`<ul>${ls.map(x=>`<li>${esc(x.name_en)} <span class="mu">${x.quantity} left, warning at ${x.low_stock_threshold}</span></li>`).join('')}</ul>`:'<p class="mu">Nothing is running low.</p>'}</div></div>`
+  +`<h3>Recent orders</h3>`+table(o.slice(0,8))+(o.length>=1000?'<p class="mu">Based on the latest 1000 orders.</p>':'')}
+
+async function orders(){
+ const st=$('#fs').value,qv=$('#fq').value.replace(/[(),*%]/g,' ').trim(),fd=$('#fd').value;
+ let p='orders?select=id,reference,status,total,created_at,customer_name,order_type&order=created_at.desc&limit=100';
+ if(st)p+='&status=eq.'+st;
+ if(fd)p+='&created_at=gte.'+fd+'T00:00:00%2B03:00';
+ if(qv){const e=encodeURIComponent(qv);p+=`&or=(reference.ilike.*${e}*,customer_name.ilike.*${e}*,customer_phone.ilike.*${e}*)`}
+ $('#ot').innerHTML=table(await db(p))}
+
+async function detail(id){
+ const r=await db('orders?select=*,order_items(*,order_item_options(*)),payments(*),order_notes(*),order_status_history(*)&id=eq.'+encodeURIComponent(id));
+ cur=r[0];draw();if(!$('#dl').open)$('#dl').showModal()}
+function draw(msg){const o=cur,py=o.payments[0],by=k=>(a,b)=>a[k]<b[k]?-1:1;
+ const items=o.order_items.map(i=>`<li class="row" style="align-items:flex-start"><span><b>${i.quantity} × ${esc(i.product_name_en)}</b>${i.variant_name_en?' · '+esc(i.variant_name_en):''}${i.order_item_options.length?'<br><span class="mu">'+i.order_item_options.map(x=>esc(x.name_en)).join(', ')+'</span>':''}</span><b>${money(i.line_total)}</b></li>`).join('');
+ $('#db').innerHTML=`<div class="row"><h2 style="font-size:2rem;margin:0">${esc(o.reference)}</h2><button class="btn ghost x" data-a="x" aria-label="Close">×</button></div>
+ <p style="margin:0">${pill(o.status)} <span class="mu">${when(o.created_at)}${o.is_demo?' · demo order':''}</span></p>
+ <div><b>${esc(o.customer_name)}</b> · <a href="tel:${esc(o.customer_phone)}" style="color:var(--cu)">${esc(o.customer_phone)}</a><br><span class="mu">${esc(o.order_type)}${o.delivery_address?' · '+esc(o.delivery_address):''}</span>${o.notes?`<br>Customer note: ${esc(o.notes)}`:''}</div>
+ <ul class="items">${items}</ul>
+ <div class="mu">Subtotal ${money(o.subtotal)}${+o.discount_total?` · Discount −${money(o.discount_total)}`:''}${+o.delivery_fee?` · Delivery ${money(o.delivery_fee)}`:''} · Tax included ${money(o.tax_total)}</div>
+ <div class="row"><b>Total</b><b>${money(o.total)}</b></div>
+ <div class="row"><span>Payment: ${py?esc(py.method)+' · '+esc(py.status):'none'}</span>${py&&py.method==='cash'&&py.status==='pending'?`<button class="btn ghost" data-a="paid" data-id="${esc(py.id)}">Mark cash as paid</button>`:''}</div>
+ <div class="row"><select id="ns" aria-label="Order status">${ST.map(s=>`<option value="${s}"${s===o.status?' selected':''}>${LB[s]}</option>`).join('')}</select><button class="btn" data-a="status">Update status</button></div>
+ <p id="dm" role="alert" style="margin:0;font-weight:600;color:var(--cu)">${esc(msg||'')}</p>
+ <div><h3>Internal notes</h3>${o.order_notes.length?'<ul>'+[...o.order_notes].sort(by('created_at')).map(n=>`<li>${esc(n.body)} <span class="mu">${when(n.created_at)}</span></li>`).join('')+'</ul>':'<p class="mu">No notes yet.</p>'}
+ <div class="row"><input id="nb" maxlength="2000" placeholder="Add a note (staff only)"><button class="btn ghost" data-a="note">Add</button></div></div>
+ <div><h3>History</h3><ul>${[...o.order_status_history].sort(by('changed_at')).map(h=>`<li>${LB[h.status]||esc(h.status)} <span class="mu">${when(h.changed_at)}</span></li>`).join('')}</ul></div>`}
+
+$('#db').onclick=async e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,o=cur;
+ if(a==='x')return $('#dl').close();
+ try{
+  if(a==='status'){const v=$('#ns').value;if(v===o.status)return;
+   const r=await db('orders?id=eq.'+o.id,'PATCH',{status:v});if(!r.length)throw new Error('You are not allowed to change this order.')}
+  if(a==='paid'){const r=await db('payments?id=eq.'+b.dataset.id,'PATCH',{status:'paid'});if(!r.length)throw new Error('You are not allowed to change this payment.')}
+  if(a==='note'){const t=$('#nb').value.trim();if(!t)return;await db('order_notes','POST',{order_id:o.id,body:t})}
+  await detail(o.id);render()}
+ catch(x){draw(ERR[x.message]||x.message)}};
+$('#dl').onclick=e=>{if(e.target===e.currentTarget)e.currentTarget.close()};
+document.addEventListener('click',async e=>{const r=e.target.closest('tr[data-id]');if(!r)return;
+ try{await detail(r.dataset.id)}catch(x){console.error(x)}});
+
+$('#fs').innerHTML='<option value="">All statuses</option>'+ST.map(s=>`<option value="${s}">${LB[s]}</option>`).join('');
+$('#fs').onchange=$('#fd').onchange=render;
+$('#fq').oninput=()=>{clearTimeout(dt);dt=setTimeout(render,300)};
+$('#nv').onclick=e=>{const b=e.target.closest('[data-t]');if(b)show(b.dataset.t)};
+$('#so').onclick=()=>out();
+$('#lf').onsubmit=async e=>{e.preventDefault();const f=e.target.elements;$('#le').textContent='';
+ try{await auth('password',{email:f.email.value.trim(),password:f.password.value});f.password.value='';await enter()}
+ catch(x){$('#le').textContent=x.message}};
+setInterval(()=>{if(sess&&!document.hidden&&!$('#dl').open)render()},15000);
+
+(async()=>{
+ try{C=await(await fetch('/api/config')).json()}catch(e){$('#le').textContent='Could not load settings from the server.';return}
+ try{const s=JSON.parse(sessionStorage.getItem('cc_admin')||'null');if(s){sess=s;await enter()}}catch(e){out()}
+})();
+</script>
+</body>
+</html>

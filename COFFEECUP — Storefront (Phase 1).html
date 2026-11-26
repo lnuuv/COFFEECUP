@@ -267,7 +267,7 @@ const api=async(path,body)=>{
  if(!r.ok)throw new Error(((j&&j.message)||'http_'+r.status)+(j&&j.hint?' ('+j.hint+')':''));return j};
 
 const by=(a,b)=>a.sort_order-b.sort_order;
-async function load(){loading=true;failed=false;grid();
+async function load(){const first=!PR.length;if(first){loading=true;failed=false;grid()}
  try{const[c,p,st]=await Promise.all([
   api('categories?select=slug,name_en,name_ar,sort_order&order=sort_order'),
   api('products?select=id,name_en,name_ar,description_en,description_ar,base_price,is_available,sort_order,categories(slug),product_variants(id,name_en,name_ar,price_delta,is_default,sort_order),option_groups(id,name_en,name_ar,is_required,sort_order,product_options(id,name_en,name_ar,price_delta,is_default,is_available,sort_order))&order=sort_order'),
@@ -280,7 +280,7 @@ async function load(){loading=true;failed=false;grid();
   st.forEach(x=>cfg[x.key]=x.value);
   cart=cart.concat(saved);saved=[];
   cart=cart.filter(i=>{const p=prod(i.id);return p&&p.ok})}
- catch(e){failed=true;err=e.message;console.error('Menu load failed:',e)}
+ catch(e){if(first){failed=true;err=e.message}console.error('Menu load failed:',e)}
  loading=false;chips();grid();paint();info()}
 
 const prod=id=>PR.find(p=>p.id===id);

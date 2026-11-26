@@ -21,11 +21,17 @@ if (!storefrontFile) {
 }
 
 app.disable('x-powered-by');
+// Render puts a proxy in front of the app. Without this, every visitor shares one IP and one rate limit.
+app.set('trust proxy', 1);
 app.use(express.json({ limit: '32kb', strict: true }));
 app.use('/assets', express.static(path.join(__dirname, 'assets'), { maxAge: '1h' }));
 
 // Small per-instance limit for public RPC calls; SQL functions still validate every operation.
 const windows = new Map();
+setInterval(() => {
+  const cut = Date.now() - 60_000;
+  for (const [ip, w] of windows) if (w.start < cut) windows.delete(ip);
+}, 60_000).unref();
 app.use('/api/rest/v1/rpc', (req, res, next) => {
   const now = Date.now();
   const ip = req.ip;
@@ -40,6 +46,13 @@ app.use('/api/rest/v1/rpc', (req, res, next) => {
 });
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
+// Settings for the admin page. This is the publishable key only. Never put a service_role key anywhere in this app.
+app.get('/api/config', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ url: supabaseUrl, key: supabaseKey });
+});
+app.use('/admin', express.static(path.join(__dirname, 'admin')));
 
 const publicTables = new Set(['categories', 'products', 'store_settings']);
 app.get('/api/rest/v1/:table', async (req, res) => {
