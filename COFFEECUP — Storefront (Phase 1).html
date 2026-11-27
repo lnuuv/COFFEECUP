@@ -61,6 +61,7 @@ input:not([type=radio]),textarea{font:inherit;color:var(--tx);background:var(--s
 .three>div{border-top:2px solid var(--cb);padding-top:14px}
 .three h3{font:700 1.5rem var(--hd);margin:0 0 6px}.three p{margin:0;color:var(--mu)}
 footer{border-top:1px solid var(--ln);padding:28px 20px;text-align:center;color:var(--mu);font-size:.9rem}
+footer a{color:var(--tx)}footer b{color:var(--tx)}
 dialog{background:var(--sf);color:var(--tx);border:1px solid var(--ln);border-radius:12px;padding:0;width:min(480px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto}
 dialog::backdrop{background:rgba(0,0,0,.6)}
 dialog.dr{margin-block:0;margin-inline:auto 0;height:100%;max-height:100%;border-radius:0;width:min(420px,100%)}
@@ -119,7 +120,7 @@ pre{white-space:pre-wrap;background:var(--sf2);padding:10px;border-radius:6px;fo
 <button class="btn" data-i="tGo"></button></form>
 <div id="tr" aria-live="polite" style="margin-top:16px"></div></section>
 </main>
-<footer data-i="foot"></footer>
+<footer><div id="fi"></div><div data-i="foot" style="margin-top:8px"></div></footer>
 
 <dialog id="pd"><div class="pad" id="pdb"></div></dialog>
 
@@ -163,7 +164,7 @@ ok:['Order confirmed. Reference:','تم تأكيد الطلب. الرقم الم
 s1:['Made to order','يُحضَّر عند الطلب'],d1:['Every drink is made after you order it.','كل مشروب يُحضَّر بعد أن تطلبه.'],
 s2:['Your milk, your way','حليبك كما تحب'],d2:['Oat, almond or soy, plus extra shots. The price updates as you choose.','شوفان أو لوز أو صويا، مع جرعات إضافية. يتغير السعر أثناء اختيارك.'],
 s3:['Pickup or delivery','استلام أو توصيل'],d3:['Collect it at the counter or have it brought to you.','استلمه من المقهى أو نوصله إليك.'],
-foot:['COFFEECUP is a concept project. Every product, price and piece of text here is demo content.','COFFEECUP مشروع تجريبي. كل المنتجات والأسعار والنصوص هنا محتوى تجريبي.']};
+foot:['COFFEECUP is a concept project. Every product, price and piece of text here is demo content.','COFFEECUP مشروع تجريبي. كل المنتجات والأسعار والنصوص هنا محتوى تجريبي.'],openDaily:['Open daily','مفتوح يوميًا']};
 const sv=(b)=>'<svg viewBox="0 0 64 64" aria-hidden="true">'+b+'</svg>';
 const G={cup:sv('<path fill="currentColor" d="M10 26h36v12a14 14 0 0 1-14 14h-8a14 14 0 0 1-14-14z"/><path fill="none" stroke="currentColor" stroke-width="4" d="M46 30h3a6 6 0 0 1 0 12h-5"/><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" d="M22 8c-4 5 4 7 0 13M32 8c-4 5 4 7 0 13"/>'),
 glass:sv('<path fill="currentColor" d="M16 16h32l-4 42H20z"/><path fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" d="M38 4l-3 14"/>'),
@@ -272,12 +273,12 @@ async function load(){const first=!PR.length;if(first){loading=true;failed=false
  if(!SBU){try{SBU=(await(await fetch('/api/config')).json()).url||''}catch(e){}}
  try{const[c,p,st]=await Promise.all([
   api('categories?select=slug,name_en,name_ar,sort_order&order=sort_order'),
-  api('products?select=id,name_en,name_ar,description_en,description_ar,image_path,base_price,is_available,sort_order,categories(slug),product_variants(id,name_en,name_ar,price_delta,is_default,sort_order),option_groups(id,name_en,name_ar,is_required,sort_order,product_options(id,name_en,name_ar,price_delta,is_default,is_available,sort_order))&order=sort_order'),
+  api('products?select=id,name_en,name_ar,description_en,description_ar,image_path,base_price,is_available,sort_order,categories(slug),product_variants(id,name_en,name_ar,price_delta,is_default,sort_order),option_groups(id,name_en,name_ar,selection,is_required,sort_order,product_options(id,name_en,name_ar,price_delta,is_default,is_available,sort_order))&order=sort_order'),
   api('store_settings?select=key,value')]);
   CATS=c.map(x=>[x.slug,[x.name_en,x.name_ar]]);
   PR=p.map(r=>({id:r.id,c:r.categories.slug,n:[r.name_en,r.name_ar],d:[r.description_en,r.description_ar],img:r.image_path&&SBU?SBU+'/storage/v1/object/public/product-images/'+r.image_path:null,p:fils(r.base_price),ok:r.is_available,
    sz:r.product_variants.sort(by).map(v=>({id:v.id,n:[v.name_en,v.name_ar],d:fils(v.price_delta),def:v.is_default})),
-   gr:r.option_groups.sort(by).map(g=>({k:g.id,n:[g.name_en,g.name_ar],req:g.is_required,
+   gr:r.option_groups.sort(by).map(g=>({k:g.id,n:[g.name_en,g.name_ar],req:g.is_required,multi:g.selection==='multiple',
     o:g.product_options.filter(o=>o.is_available).sort(by).map(o=>({id:o.id,n:[o.name_en,o.name_ar],d:fils(o.price_delta),def:o.is_default}))})).filter(g=>g.o.length)}));
   st.forEach(x=>cfg[x.key]=x.value);
   cart=cart.concat(saved);saved=[];
@@ -286,10 +287,11 @@ async function load(){const first=!PR.length;if(first){loading=true;failed=false
  loading=false;chips();grid();paint();info()}
 
 const prod=id=>PR.find(p=>p.id===id);
-const price=(p,o)=>p.p+((p.sz.find(v=>v.id===o.size)||{}).d||0)+p.gr.reduce((t,g)=>t+((g.o.find(x=>x.id===o[g.k])||{}).d||0),0);
+const chosen=(g,o)=>g.o.filter(x=>[].concat(o[g.k]||[]).includes(x.id));
+const price=(p,o)=>p.p+((p.sz.find(v=>v.id===o.size)||{}).d||0)+p.gr.reduce((t,g)=>t+chosen(g,o).reduce((u,x)=>u+x.d,0),0);
 const lineP=i=>price(prod(i.id),i.o)*i.q;
 const subtotal=()=>cart.reduce((t,i)=>t+lineP(i),0);
-const summ=i=>{const p=prod(i.id);return [(p.sz.find(v=>v.id===i.o.size)||{}).n,...p.gr.map(g=>(g.o.find(x=>x.id===i.o[g.k])||{}).n)].filter(Boolean).map(pick).join(' · ')};
+const summ=i=>{const p=prod(i.id);return [(p.sz.find(v=>v.id===i.o.size)||{}).n,...p.gr.flatMap(g=>chosen(g,i.o).map(x=>x.n))].filter(Boolean).map(pick).join(' · ')};
 
 function chips(){$('#chips').innerHTML=[['all',S.all],...CATS].map(([k,n])=>`<button class="chip" data-c="${k}" aria-pressed="${k===cat}">${pick(n)}</button>`).join('')}
 const cardHTML=p=>`<article class="card">${media(p,false)}<div class="cb"><h3>${pick(p.n)}</h3><p>${pick(p.d)}</p><div class="row"><span class="price">${s('from')} ${m(p.p)}</span>${p.ok?`<button class="btn" data-p="${p.id}">${s(p.sz.length||p.gr.length?'cust':'addS')}</button>`:`<span class="tag">${s('sold')}</span>`}</div></div></article>`;
@@ -304,7 +306,15 @@ function paint(){const n=cart.reduce((t,i)=>t+i.q,0);$('#cnt').textContent=n;
  $('#cl').innerHTML=cart.length?cart.map((i,x)=>{const p=prod(i.id);return `<div class="li">${media(p,true)}<div><b>${pick(p.n)}</b><div class="mu">${summ(i)}</div><div class="qty"><button data-a="${x}" data-d="-1" aria-label="−">−</button><b>${i.q}</b><button data-a="${x}" data-d="1" aria-label="+">+</button></div><button class="lnk" data-r="${x}">${s('rm')}</button></div><b>${m(lineP(i))}</b></div>`}).join(''):`<p>${s('empty')}</p>`;
  $('#dl').hidden=!disc;$('#dv').textContent='− '+m(disc);
  $('#tt').textContent=m(Math.max(subtotal()-disc,0));$('#go').disabled=!cart.length}
-function info(){const d=cfg.delivery||{};
+const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// Store details come from the admin Settings page.
+function foot(){const b=cfg.brand||{},c=cfg.contact||{},h=(cfg.hours||{}).daily||{},p=[];
+ if(c.address)p.push(esc(c.address));
+ if(c.phone)p.push(`<a href="tel:${esc(c.phone)}" dir="ltr">${esc(c.phone)}</a>`);
+ if(c.email)p.push(`<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>`);
+ if(h.open&&h.close)p.push(`${s('openDaily')} <bdi>${esc(h.open)}–${esc(h.close)}</bdi>`);
+ $('#fi').innerHTML=(b.name?`<b>${esc(b.name)}</b>`:'')+(p.length?`<div style="margin-top:4px">${p.join(' · ')}</div>`:'')}
+function info(){foot();const d=cfg.delivery||{};
  $('#di').textContent=`${s('dInfo')}: ${m(fils(d.fee||0))} · ${s('min')}: ${m(fils(d.min_order||0))}`;$('#dlv').hidden=d.enabled===false}
 function lng(){document.documentElement.lang=lang;document.documentElement.dir=ar()?'rtl':'ltr';
  $$('[data-i]').forEach(e=>e.textContent=s(e.dataset.i));
@@ -313,12 +323,12 @@ function lng(){document.documentElement.lang=lang;document.documentElement.dir=a
 const save=()=>{try{localStorage.setItem('cc_c2',JSON.stringify(cart))}catch(e){}dcode=null;disc=0;$('#dm').textContent='';paint()};
 
 const upd=()=>{$('#qv').textContent=qty;$('#ad').textContent=`${s('add')} · ${m(price(cur,sel)*qty)}`};
-const grp=(k,title,list,none)=>`<fieldset><legend>${title}</legend><div class="opts">${(none?[{id:'',n:S.noOpt,d:0}]:[]).concat(list).map(v=>`<label><input type="radio" name="${k}" value="${v.id}"${v.id===sel[k]?' checked':''}><span>${pick(v.n)}${v.d?' +'+m(v.d):''}</span></label>`).join('')}</div></fieldset>`;
+const grp=(k,title,list,none,multi)=>`<fieldset><legend>${title}</legend><div class="opts">${(none?[{id:'',n:S.noOpt,d:0}]:[]).concat(list).map(v=>`<label><input type="${multi?'checkbox':'radio'}" name="${k}" value="${v.id}"${(multi?(sel[k]||[]).includes(v.id):v.id===sel[k])?' checked':''}><span>${pick(v.n)}${v.d?' +'+m(v.d):''}</span></label>`).join('')}</div></fieldset>`;
 function open1(id){cur=prod(id);sel={};qty=1;
  if(cur.sz.length)sel.size=(cur.sz.find(v=>v.def)||cur.sz[0]).id;
- cur.gr.forEach(g=>sel[g.k]=((g.o.find(x=>x.def)||(g.req&&g.o[0]))||{}).id||'');
+ cur.gr.forEach(g=>sel[g.k]=g.multi?g.o.filter(x=>x.def).map(x=>x.id):((g.o.find(x=>x.def)||(g.req&&g.o[0]))||{}).id||'');
  $('#pdb').innerHTML=`<div class="row"><h2 style="font-size:2rem;margin:0">${pick(cur.n)}</h2><button class="btn ghost x" data-x aria-label="Close">×</button></div><p class="mu" style="margin:0">${pick(cur.d)}</p>`
- +(cur.sz.length?grp('size',s('size'),cur.sz,false):'')+cur.gr.map(g=>grp(g.k,pick(g.n),g.o,!g.req)).join('')
+ +(cur.sz.length?grp('size',s('size'),cur.sz,false):'')+cur.gr.map(g=>grp(g.k,pick(g.n),g.o,!g.req&&!g.multi,g.multi)).join('')
  +`<div class="row"><div class="qty"><button data-q="-1" aria-label="−">−</button><b id="qv"></b><button data-q="1" aria-label="+">+</button></div><button class="btn" id="ad"></button></div>`;
  upd();$('#pd').showModal()}
 function addCart(){const k=cur.id+JSON.stringify(sel),x=cart.find(i=>i.k===k);x?x.q=Math.min(50,x.q+qty):cart.push({k,id:cur.id,o:{...sel},q:qty});save();
@@ -328,7 +338,7 @@ $('#pd').onclick=e=>{if(e.target===e.currentTarget)return e.currentTarget.close(
  if('x' in b.dataset)$('#pd').close();
  else if(b.dataset.q){qty=Math.min(20,Math.max(1,qty+ +b.dataset.q));upd()}
  else if(b.id==='ad'){addCart();$('#pd').close()}};
-$('#pd').onchange=e=>{if(e.target.type==='radio'){sel[e.target.name]=e.target.value;upd()}};
+$('#pd').onchange=e=>{const t=e.target;if(t.type==='radio'){sel[t.name]=t.value;upd()}else if(t.type==='checkbox'){sel[t.name]=$$('#pd input[type=checkbox]').filter(x=>x.name===t.name&&x.checked).map(x=>x.value);upd()}};
 $('#grid').onclick=e=>{if(e.target.id==='rt')return load();const b=e.target.closest('[data-p]');if(b)open1(b.dataset.p)};
 $('#featuredGrid').onclick=e=>{const b=e.target.closest('[data-p]');if(b)open1(b.dataset.p)};
 $('#chips').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;cat=b.dataset.c;$$('.chip').forEach(c=>c.setAttribute('aria-pressed',c.dataset.c===cat));grid()};
@@ -358,7 +368,7 @@ $('#co').onsubmit=async e=>{e.preventDefault();
  er.textContent='';btn.disabled=true;
  // Only ids, options and quantities are sent. The database works out every price.
  const payload={customer:{name:v('name'),phone:v('phone')},order_type:t,address:t==='delivery'?v('addr'):null,notes:v('notes')||null,payment_method:'cash',discount_code:dcode,
-  items:cart.map(i=>({product_id:i.id,variant_id:i.o.size||null,quantity:i.q,option_ids:Object.entries(i.o).filter(([k,x])=>k!=='size'&&x).map(([k,x])=>x)}))};
+  items:cart.map(i=>({product_id:i.id,variant_id:i.o.size||null,quantity:i.q,option_ids:Object.entries(i.o).filter(([k])=>k!=='size').flatMap(([k,x])=>x).filter(Boolean)}))};
  try{const r=await api('rpc/place_order',{payload}),ph=v('phone');
   cart=[];save();e.target.reset();$('#adr').hidden=$('#di').hidden=true;$('#cd').close();
   const tf=$('#tf').elements;tf.ref.value=r.reference;tf.phone.value=ph;await trackNow();$('#track').scrollIntoView()}
