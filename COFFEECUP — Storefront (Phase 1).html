@@ -98,7 +98,7 @@ pre{white-space:pre-wrap;background:var(--sf2);padding:10px;border-radius:6px;fo
 <header><div class="bar">
 <a class="logo" href="#top" aria-label="COFFEECUP"><img src="/assets/coffeecup-wordmark.png" alt="" width="135" height="45"></a>
 <nav><a href="#menu" data-i="nMenu"></a><a href="#about" data-i="nAbout"></a><a href="#track" data-i="nTrack"></a>
-<button class="btn ghost" id="lg" aria-label="Language / اللغة">ع</button>
+<button class="btn ghost" id="acct" data-i="acct"></button><button class="btn ghost" id="lg" aria-label="Language / اللغة">ع</button>
 <button class="btn" id="cartBtn"><span data-i="cart"></span><b id="cnt" aria-live="polite">0</b></button></nav>
 </div></header>
 <main id="top">
@@ -108,20 +108,39 @@ pre{white-space:pre-wrap;background:var(--sf2);padding:10px;border-radius:6px;fo
 </div>
 <section id="featured"><div class="section-head"><h2 data-i="featured"></h2><a class="btn ghost" href="#menu" data-i="viewMenu"></a></div>
 <div class="grid" id="featuredGrid" aria-live="polite"></div></section>
+<section id="best" hidden><h2 data-i="bsT"></h2><div class="grid" id="bs"></div></section>
 <section id="menu"><h2 data-i="menu"></h2>
 <div class="tools"><input type="search" id="q" style="max-width:320px"><div class="chips" id="chips"></div></div>
 <div class="grid" id="grid"></div></section>
 <section id="about"><h2 data-i="nAbout"></h2>
 <div class="three"><div><h3 data-i="s1"></h3><p data-i="d1"></p></div><div><h3 data-i="s2"></h3><p data-i="d2"></p></div><div><h3 data-i="s3"></h3><p data-i="d3"></p></div></div></section>
+<section id="rev"><h2 data-i="rvT"></h2><p class="mu" style="margin-top:0" data-i="rvD"></p>
+<div class="three"><div><p style="margin:0 0 6px" data-i="rv1"></p><span class="mu" data-i="rvN"></span></div><div><p style="margin:0 0 6px" data-i="rv2"></p><span class="mu" data-i="rvN"></span></div></div></section>
 <section id="track"><h2 data-i="nTrack"></h2>
 <form id="tf" class="g" style="max-width:420px" novalidate>
 <label class="f"><span data-i="tRef"></span><input name="ref" autocomplete="off" style="direction:ltr"></label>
 <label class="f"><span data-i="fPhone"></span><input name="phone" type="tel" inputmode="tel"></label>
 <button class="btn" data-i="tGo"></button></form>
 <div id="tr" aria-live="polite" style="margin-top:16px"></div></section>
+<section id="news"><h2 data-i="nlT"></h2><p class="mu" style="margin-top:0" data-i="nlD"></p>
+<form id="nf" class="row" style="max-width:480px" novalidate><input name="email" type="email" autocomplete="email" aria-label="Email" style="direction:ltr"><button class="btn" data-i="nlGo"></button></form><p id="nm" role="status" class="mu"></p></section>
 </main>
 <footer><div id="fi"></div><div data-i="foot" style="margin-top:8px"></div></footer>
 
+<dialog id="ad"><div class="pad">
+<div class="row"><h2 style="font-size:2rem;margin:0" data-i="acct"></h2><button class="btn ghost x" id="ax" aria-label="Close">×</button></div>
+<div id="av" hidden></div>
+<form id="af" class="g" novalidate>
+<div class="opts"><label><input type="radio" name="mode" value="in" checked><span data-i="aIn"></span></label><label><input type="radio" name="mode" value="up"><span data-i="aUp"></span></label><label><input type="radio" name="mode" value="fg"><span data-i="aFg"></span></label></div>
+<label class="f" id="an" hidden><span data-i="fName"></span><input name="name" autocomplete="name"></label>
+<label class="f"><span data-i="aMail"></span><input name="email" type="email" autocomplete="email" style="direction:ltr"></label>
+<label class="f" id="ap"><span data-i="aPass"></span><input name="password" type="password" autocomplete="current-password" style="direction:ltr"></label>
+<p id="ae" role="alert" style="margin:0;font-weight:600;color:var(--cu)"></p>
+<button class="btn" id="asub" data-i="aGo"></button></form>
+<form id="rf" class="g" hidden novalidate><label class="f"><span data-i="aNew"></span><input name="password" type="password" autocomplete="new-password" style="direction:ltr"></label>
+<p id="re" role="alert" style="margin:0;font-weight:600;color:var(--cu)"></p><button class="btn" data-i="aSave"></button></form>
+</div></dialog>
+<dialog id="od"><div class="pad" id="ob2"></div></dialog>
 <dialog id="pd"><div class="pad" id="pdb"></div></dialog>
 
 <dialog id="cd" class="dr"><div class="pad">
@@ -284,7 +303,7 @@ async function load(){const first=!PR.length;if(first){loading=true;failed=false
   cart=cart.concat(saved);saved=[];
   cart=cart.filter(i=>{const p=prod(i.id);return p&&p.ok})}
  catch(e){if(first){failed=true;err=e.message}console.error('Menu load failed:',e)}
- loading=false;chips();grid();paint();info()}
+ loading=false;chips();grid();paint();info();best()}
 
 const prod=id=>PR.find(p=>p.id===id);
 const chosen=(g,o)=>g.o.filter(x=>[].concat(o[g.k]||[]).includes(x.id));
@@ -314,7 +333,7 @@ function foot(){const b=cfg.brand||{},c=cfg.contact||{},h=(cfg.hours||{}).daily|
  if(c.email)p.push(`<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>`);
  if(h.open&&h.close)p.push(`${s('openDaily')} <bdi>${esc(h.open)}–${esc(h.close)}</bdi>`);
  $('#fi').innerHTML=(b.name?`<b>${esc(b.name)}</b>`:'')+(p.length?`<div style="margin-top:4px">${p.join(' · ')}</div>`:'')}
-function info(){foot();const d=cfg.delivery||{};
+function info(){foot();bestR();const d=cfg.delivery||{};
  $('#di').textContent=`${s('dInfo')}: ${m(fils(d.fee||0))} · ${s('min')}: ${m(fils(d.min_order||0))}`;$('#dlv').hidden=d.enabled===false}
 function lng(){document.documentElement.lang=lang;document.documentElement.dir=ar()?'rtl':'ltr';
  $$('[data-i]').forEach(e=>e.textContent=s(e.dataset.i));
@@ -369,9 +388,9 @@ $('#co').onsubmit=async e=>{e.preventDefault();
  // Only ids, options and quantities are sent. The database works out every price.
  const payload={customer:{name:v('name'),phone:v('phone')},order_type:t,address:t==='delivery'?v('addr'):null,notes:v('notes')||null,payment_method:'cash',discount_code:dcode,
   items:cart.map(i=>({product_id:i.id,variant_id:i.o.size||null,quantity:i.q,option_ids:Object.entries(i.o).filter(([k])=>k!=='size').flatMap(([k,x])=>x).filter(Boolean)}))};
- try{const r=await api('rpc/place_order',{payload}),ph=v('phone');
+ try{const r=await call('place_order',{payload}),ph=v('phone');
   cart=[];save();e.target.reset();$('#adr').hidden=$('#di').hidden=true;$('#cd').close();
-  const tf=$('#tf').elements;tf.ref.value=r.reference;tf.phone.value=ph;await trackNow();$('#track').scrollIntoView()}
+  const tf=$('#tf').elements;tf.ref.value=r.reference;tf.phone.value=ph;await trackNow();confirmOrder(r)}
  catch(x){const k=x.message;
   er.textContent=s(k==='invalid_phone'?'ePh':k==='delivery_min_order'?'dMin':k==='invalid_discount'?'noDisc':k==='discount_min_order'?'discMin'
    :/^(product_unavailable|out_of_stock|invalid_option|option_required|option_conflict|invalid_variant|variant_required)$/.test(k)?'itemGone':'fail');
@@ -391,6 +410,78 @@ async function trackNow(){const f=$('#tf').elements,box=$('#tr');clearInterval(t
   if(!['completed','cancelled'].includes(o.status))tm=setInterval(()=>trackNow(),10000)}
  catch(e){box.textContent=s('fail')}}
 $('#tf').onsubmit=e=>{e.preventDefault();trackNow()};
+
+Object.assign(S,{
+acct:['Account','حسابي'],aIn:['Sign in','دخول'],aUp:['Create account','حساب جديد'],aFg:['Forgot password','نسيت كلمة السر'],
+aMail:['Email','البريد الإلكتروني'],aPass:['Password','كلمة السر'],aGo:['Sign in','دخول'],aSend:['Send reset link','أرسل رابط الاستعادة'],
+aSent:['If that email has an account, a reset link is on its way.','إذا كان للبريد حساب، فرابط الاستعادة في الطريق إليه.'],
+aShort:['Use at least 8 characters.','استخدم 8 أحرف على الأقل.'],
+aCheck:['Check your email to confirm the account, then sign in.','تحقق من بريدك لتأكيد الحساب ثم سجّل الدخول.'],
+aBad:['Wrong email or password.','البريد أو كلمة السر غير صحيحة.'],aNew:['New password','كلمة سر جديدة'],aSave:['Save password','حفظ كلمة السر'],
+aDone:['Password changed. Sign in with the new one.','تم تغيير كلمة السر. سجّل الدخول بالجديدة.'],aOut:['Sign out','تسجيل الخروج'],
+aOrd:['Your recent orders','طلباتك الأخيرة'],aNone:['No orders yet.','لا توجد طلبات بعد.'],okT:['Thank you','شكرًا لك'],
+nlT:['Newsletter','النشرة البريدية'],nlD:['Offers and new drinks, no spam.','عروض ومشروبات جديدة بدون إزعاج.'],nlGo:['Subscribe','اشترك'],
+nlBad:['Enter a valid email.','أدخل بريدًا صحيحًا.'],nlOk:['You are subscribed.','تم اشتراكك.'],bsT:['Best sellers','الأكثر طلبًا'],
+rvT:['What guests say','آراء الزبائن'],rvD:['Demo content. These are sample reviews, not from real customers.','محتوى تجريبي. هذه آراء نموذجية وليست من زبائن حقيقيين.'],
+rv1:['“A strong flat white and a croissant that was still warm.”','«فلات وايت قوي وكرواسون ما زال دافئًا.»'],
+rv2:['“I ordered ahead and it was ready when I got there.”','«طلبت مسبقًا وكان جاهزًا عند وصولي.»'],rvN:['Sample review','رأي نموذجي']});
+
+// ===== Customer accounts (Supabase Auth). Orders placed while signed in are linked to the account. =====
+const cfgP=fetch('/api/config').then(r=>r.json()).catch(()=>({}));
+let sess=null,rtoken=null,BSR=[];
+try{sess=JSON.parse(localStorage.getItem('cc_sess')||'null')}catch(e){}
+function setSess(j){sess=j?{at:j.access_token,rt:j.refresh_token,exp:Date.now()+j.expires_in*1000,email:j.user.email}:null;
+ try{j?localStorage.setItem('cc_sess',JSON.stringify(sess)):localStorage.removeItem('cc_sess')}catch(e){}acct()}
+async function sb(path,{method='GET',body,token}={}){const c=await cfgP;
+ const r=await fetch(c.url+path,{method,headers:{apikey:c.key,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:body?JSON.stringify(body):undefined});
+ const j=await r.json().catch(()=>null);if(!r.ok)throw new Error((j&&(j.error_description||j.msg||j.message))||'http_'+r.status);return j}
+async function tok(){if(!sess)return null;
+ if(sess.exp-Date.now()<60000){try{setSess(await sb('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:{refresh_token:sess.rt}}))}catch(e){setSess(null);return null}}
+ return sess.at}
+const call=async(fn,body)=>sess?sb('/rest/v1/rpc/'+fn,{method:'POST',body,token:await tok()}):api('rpc/'+fn,body);
+const mode=()=>$('#af').elements.mode.value;
+function acct(){$('#acct').textContent=sess?sess.email.split('@')[0]:s('acct')}
+function view(){$('#av').hidden=!sess;$('#af').hidden=!!sess;$('#rf').hidden=true}
+$('#acct').onclick=()=>{$('#ae').textContent='';view();$('#ad').showModal();if(sess)mine()};
+$('#ax').onclick=()=>$('#ad').close();
+$('#ad').onclick=e=>{if(e.target===e.currentTarget)e.currentTarget.close()};
+$('#af').onchange=e=>{if(e.target.name!=='mode')return;const k=mode();$('#an').hidden=k!=='up';$('#ap').hidden=k==='fg';$('#asub').textContent=s(k==='in'?'aGo':k==='up'?'aUp':'aSend')};
+$('#af').onsubmit=async e=>{e.preventDefault();const f=e.target.elements,k=mode(),em=f.email.value.trim(),pw=f.password.value,er=$('#ae');er.textContent='';
+ try{
+  if(!em)throw new Error(s('aMail'));
+  if(k==='fg'){await sb('/auth/v1/recover',{method:'POST',body:{email:em}});er.textContent=s('aSent');return}
+  if(pw.length<8)throw new Error(s('aShort'));
+  if(k==='up'){const j=await sb('/auth/v1/signup',{method:'POST',body:{email:em,password:pw,data:{full_name:f.name.value.trim()}}});
+   if(j&&j.access_token)setSess(j);else{er.textContent=s('aCheck');return}}
+  else setSess(await sb('/auth/v1/token?grant_type=password',{method:'POST',body:{email:em,password:pw}}));
+  f.password.value='';view();mine()}
+ catch(x){er.textContent=x.message==='Invalid login credentials'?s('aBad'):x.message}};
+async function mine(){const b=$('#av');
+ b.innerHTML=`<p style="margin:0">${esc(sess.email)}</p><div id="ml"></div><button class="btn ghost" id="so2">${s('aOut')}</button>`;
+ try{const r=await sb('/rest/v1/orders?select=reference,status,total,created_at&order=created_at.desc&limit=10',{token:await tok()});
+  $('#ml').innerHTML=r.length?`<h3 style="font:700 1.2rem var(--hd);margin:.8rem 0 .4rem">${s('aOrd')}</h3>`+r.map(o=>`<div class="row" style="padding:6px 0;border-bottom:1px solid var(--ln)"><span><b>${esc(o.reference)}</b> <span class="mu">${new Date(o.created_at).toLocaleDateString(ar()?'ar-JO':'en-GB')}</span></span><span>${s('st_'+o.status)} · ${m(fils(o.total))}</span></div>`).join(''):`<p class="mu">${s('aNone')}</p>`}
+ catch(e){$('#ml').textContent=s('fail')}}
+$('#av').onclick=e=>{if(e.target.id!=='so2')return;const t=sess&&sess.at;setSess(null);if(t)sb('/auth/v1/logout',{method:'POST',token:t}).catch(()=>{});view()};
+// Password recovery: the email link brings the visitor back here with a short-lived token in the address.
+(()=>{const h=new URLSearchParams(location.hash.slice(1));
+ if(h.get('type')==='recovery'&&h.get('access_token')){rtoken=h.get('access_token');history.replaceState(null,'',location.pathname);
+  $('#av').hidden=$('#af').hidden=true;$('#rf').hidden=false;$('#ad').showModal()}})();
+$('#rf').onsubmit=async e=>{e.preventDefault();const pw=e.target.elements.password.value,er=$('#re');
+ if(pw.length<8){er.textContent=s('aShort');return}
+ try{await sb('/auth/v1/user',{method:'PUT',body:{password:pw},token:rtoken});er.textContent='';$('#rf').hidden=true;$('#af').hidden=false;$('#ae').textContent=s('aDone')}
+ catch(x){er.textContent=x.message}};
+
+// ===== Order confirmation, best sellers and newsletter =====
+function confirmOrder(r){$('#ob2').innerHTML=`<h2 style="font-size:2rem;margin:0">${s('okT')}</h2><p style="margin:0">${s('ok')} <b>${esc(r.reference)}</b></p><p class="mu" style="margin:0">${s('keep')} ${m(fils(r.total))}</p><button class="btn" id="otk">${s('tGo')}</button>`;$('#od').showModal()}
+$('#od').onclick=e=>{if(e.target.id==='otk'||e.target===e.currentTarget){$('#od').close();if(e.target.id==='otk')$('#track').scrollIntoView()}};
+async function best(){try{BSR=await api('rpc/best_sellers',{p_limit:4})}catch(e){BSR=[]}bestR()}
+function bestR(){const l=BSR.map(x=>prod(x.product_id)).filter(p=>p&&p.ok);$('#best').hidden=!l.length;
+ $('#bs').innerHTML=l.map(p=>`<article class="card"><div class="cb"><h3>${esc(pick(p.n))}</h3><div class="row"><span class="price">${m(p.p)}</span><button class="btn" data-b="${p.id}">${s(p.sz.length||p.gr.length?'cust':'addS')}</button></div></div></article>`).join('')}
+$('#bs').onclick=e=>{const b=e.target.closest('[data-b]');if(b)open1(b.dataset.b)};
+$('#nf').onsubmit=async e=>{e.preventDefault();const em=e.target.elements.email.value.trim(),nm=$('#nm');
+ if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){nm.textContent=s('nlBad');return}
+ try{await api('rpc/subscribe_newsletter',{p_email:em});nm.textContent=s('nlOk');e.target.reset()}catch(x){nm.textContent=s('fail')}};
+acct();
 
 lng();load();
 window.addEventListener('focus',()=>load());

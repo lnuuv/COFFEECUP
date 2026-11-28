@@ -107,7 +107,7 @@ tr[data-id]{cursor:pointer}tr[data-id]:hover{background:var(--sf2)}
 .pill{display:inline-block;padding:.1rem .6rem;border-radius:99px;border:1px solid var(--ln);font-size:.85rem}
 .pill.new{background:var(--cb);border-color:var(--cb);color:#090909}.pill.cancelled{color:var(--cu);border-color:var(--cu)}
 .items{list-style:none;padding:0;margin:0;display:grid;gap:8px}
-#dl,#pe,#ge,#oe{width:min(720px,calc(100% - 24px))}
+#dl,#pe,#ge,#oe,#ce{width:min(720px,calc(100% - 24px))}
 .orow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
 .orow .n1,.orow .n2{flex:1 1 140px;width:auto}.orow .pd{width:96px}
 .ogrp{border:1px solid var(--ln);border-radius:8px;padding:12px;margin-bottom:12px}
@@ -120,7 +120,7 @@ tr[data-id]{cursor:pointer}tr[data-id]:hover{background:var(--sf2)}
 </head>
 <body>
 <header><div class="bar"><span class="brand">COFFEE<b>CUP</b><small>Admin</small></span>
-<nav id="nv" hidden><button class="chip" data-t="ov" aria-pressed="true">Overview</button><button class="chip" data-t="od" aria-pressed="false">Orders</button><button class="chip" data-t="pr" aria-pressed="false">Products</button><button class="chip" data-t="ct" data-adm hidden aria-pressed="false">Categories</button><button class="chip" data-t="dc" data-adm hidden aria-pressed="false">Discounts</button><button class="chip" data-t="st" data-adm hidden aria-pressed="false">Settings</button><button class="btn ghost" id="so">Sign out</button></nav>
+<nav id="nv" hidden><button class="chip" data-t="ov" aria-pressed="true">Overview</button><button class="chip" data-t="od" aria-pressed="false">Orders</button><button class="chip" data-t="pr" aria-pressed="false">Products</button><button class="chip" data-t="cu" aria-pressed="false">Customers</button><button class="chip" data-t="ct" data-adm hidden aria-pressed="false">Categories</button><button class="chip" data-t="dc" data-adm hidden aria-pressed="false">Discounts</button><button class="chip" data-t="st" data-adm hidden aria-pressed="false">Settings</button><button class="btn ghost" id="so">Sign out</button></nav>
 </div></header>
 <main>
 <section id="lg"><h2>Staff sign in</h2>
@@ -141,12 +141,14 @@ tr[data-id]{cursor:pointer}tr[data-id]:hover{background:var(--sf2)}
 <div class="tools"><button class="btn" id="ga">Add</button></div>
 <div id="gt"></div></div>
 <div id="sn" hidden><div id="sv"></div></div>
+<div id="cn" hidden><div class="tools"><input id="cq" placeholder="Search customers" style="max-width:300px"></div><div id="cl2"></div></div>
 </section>
 </main>
 <dialog id="dl"><div class="pad" id="db"></div></dialog>
 <dialog id="pe"><div class="pad" id="pb"></div></dialog>
 <dialog id="ge"><div class="pad" id="gb"></div></dialog>
 <dialog id="oe"><div class="pad" id="ob"></div></dialog>
+<dialog id="ce"><div class="pad" id="cb2"></div></dialog>
 
 <script>
 const $=x=>document.querySelector(x),$$=x=>[...document.querySelectorAll(x)];
@@ -184,9 +186,9 @@ async function enter(){
  isAdmin=r.some(x=>x.role==='admin');$('#pa1').hidden=!isAdmin;$$('[data-adm]').forEach(b=>b.hidden=!isAdmin);
  $('#lg').hidden=true;$('#app').hidden=$('#nv').hidden=false;show('ov')}
 
-function show(t){tab=t;$$('#nv [data-t]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t));$('#ov').hidden=t!=='ov';$('#od').hidden=t!=='od';$('#pr').hidden=t!=='pr';$('#gn').hidden=!GEN[t];$('#sn').hidden=t!=='st';render()}
-async function render(){const box=tab==='st'?$('#sv'):GEN[tab]?$('#gt'):tab==='ov'?$('#ov'):tab==='od'?$('#ot'):$('#pt');
- try{await(tab==='st'?settings():GEN[tab]?gen():tab==='ov'?overview():tab==='od'?orders():products())}catch(e){box.textContent='Could not load: '+e.message}}
+function show(t){tab=t;$$('#nv [data-t]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===t));$('#ov').hidden=t!=='ov';$('#od').hidden=t!=='od';$('#pr').hidden=t!=='pr';$('#gn').hidden=!GEN[t];$('#sn').hidden=t!=='st';$('#cn').hidden=t!=='cu';render()}
+async function render(){const box=tab==='cu'?$('#cl2'):tab==='st'?$('#sv'):GEN[tab]?$('#gt'):tab==='ov'?$('#ov'):tab==='od'?$('#ot'):$('#pt');
+ try{await(tab==='cu'?customers():tab==='st'?settings():GEN[tab]?gen():tab==='ov'?overview():tab==='od'?orders():products())}catch(e){box.textContent='Could not load: '+e.message}}
 
 const table=r=>r.length?`<div class="tbl"><table><thead><tr><th>Order</th><th>Customer</th><th>Type</th><th>Status</th><th>Total</th><th>Placed</th></tr></thead><tbody>${r.map(x=>`<tr data-id="${esc(x.id)}"><td><b>${esc(x.reference)}</b></td><td>${esc(x.customer_name)}</td><td>${esc(x.order_type)}</td><td>${pill(x.status)}</td><td>${money(x.total)}</td><td>${when(x.created_at)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="mu">No orders found.</p>';
 
@@ -200,11 +202,15 @@ async function overview(){
  const dead=new Set(o.filter(x=>x.status==='cancelled').map(x=>x.id)),pop={};
  it.forEach(i=>{if(!dead.has(i.order_id))pop[i.product_name_en]=(pop[i.product_name_en]||0)+i.quantity});
  const top=Object.entries(pop).sort((a,b)=>b[1]-a[1]).slice(0,5);
+ const days=[...Array(14)].map((_,i)=>day(Date.now()-(13-i)*864e5)),rv=Object.fromEntries(days.map(d=>[d,0]));
+ live.forEach(x=>{const d=day(x.created_at);if(d in rv)rv[d]+= +x.total});
+ const mx=Math.max(1,...Object.values(rv)),bars=days.map((d,i)=>{const h=Math.round(rv[d]/mx*90);return `<rect x="${i*30+4}" y="${100-h}" width="22" height="${h}" rx="3" fill="var(--cb)"><title>${d}: ${money(rv[d])}</title></rect><text x="${i*30+15}" y="116" font-size="9" text-anchor="middle" fill="var(--mu)">${d.slice(8)}</text>`}).join('');
+ const chart=`<h3>Revenue, last 14 days</h3><div class="tbl"><svg viewBox="0 0 420 122" width="100%" style="min-width:420px" role="img" aria-label="Revenue per day for the last 14 days">${bars}</svg></div>`;
  const card=(l,v)=>`<div class="stat"><span class="mu">${l}</span><b>${v}</b></div>`;
  $('#ov').innerHTML=`<div class="stats">`+card('Total orders',o.length)+card("Today's orders",o.filter(x=>day(x.created_at)===td).length)
   +card('Revenue (not cancelled)',money(rev))+card('Average order',money(live.length?rev/live.length:0))
   +card('Pending',o.filter(x=>['new','confirmed','preparing'].includes(x.status)).length)+`</div>`
-  +`<div class="two"><div><h3>Popular products</h3>${top.length?`<ol>${top.map(([n,q])=>`<li>${esc(n)} <span class="mu">× ${q}</span></li>`).join('')}</ol>`:'<p class="mu">No orders yet.</p>'}</div>`
+  +chart+`<div class="two"><div><h3>Popular products</h3>${top.length?`<ol>${top.map(([n,q])=>`<li>${esc(n)} <span class="mu">× ${q}</span></li>`).join('')}</ol>`:'<p class="mu">No orders yet.</p>'}</div>`
   +`<div><h3>Low stock</h3>${ls.length?`<ul>${ls.map(x=>`<li>${esc(x.name_en)} <span class="mu">${x.quantity} left, warning at ${x.low_stock_threshold}</span></li>`).join('')}</ul>`:'<p class="mu">Nothing is running low.</p>'}</div></div>`
   +`<h3>Recent orders</h3>`+table(o.slice(0,8))+(o.length>=1000?'<p class="mu">Based on the latest 1000 orders.</p>':'')}
 
@@ -458,6 +464,21 @@ $('#ob').onclick=async e=>{const b=e.target.closest('[data-o]');if(!b)return;con
  else if(o==='save')return saveOpts();
  drawOpts()};
 $('#oe').onclick=e=>{if(e.target===e.currentTarget)e.currentTarget.close()};
+
+
+// ===== Customers (built from real orders) =====
+let CU=[];
+async function customers(){
+ CU=await db('customers?select=id,full_name,phone,email,is_demo,orders(id,reference,status,total,created_at,order_type,customer_name)&order=created_at.desc&limit=500');
+ const q=$('#cq').value.trim().toLowerCase(),r=CU.filter(c=>!q||(c.full_name+' '+c.phone+' '+(c.email||'')).toLowerCase().includes(q));
+ $('#cl2').innerHTML=r.length?`<div class="tbl"><table><thead><tr><th>Customer</th><th>Phone</th><th>Orders</th><th>Spent</th><th>Last order</th></tr></thead><tbody>${r.map(c=>{
+  const live=c.orders.filter(x=>x.status!=='cancelled'),last=c.orders.map(x=>x.created_at).sort().pop();
+  return `<tr data-cu="${esc(c.id)}"><td><b>${esc(c.full_name)}</b>${c.is_demo?' <span class="pill">demo</span>':''}</td><td>${esc(c.phone)}</td><td>${c.orders.length}</td><td>${money(live.reduce((t,x)=>t+ +x.total,0))}</td><td>${last?when(last):'-'}</td></tr>`}).join('')}</tbody></table></div>`:'<p class="mu">No customers found.</p>'}
+document.addEventListener('click',e=>{const r=e.target.closest('tr[data-cu]');if(!r)return;const c=CU.find(x=>x.id===r.dataset.cu);if(!c)return;
+ $('#cb2').innerHTML=`<div class="row"><h2 style="font-size:2rem;margin:0">${esc(c.full_name)}</h2><button class="btn ghost x" id="cx2" aria-label="Close">×</button></div><p class="mu" style="margin:0">${esc(c.phone)}${c.email?' · '+esc(c.email):''}</p><h3>Order history</h3>`+table([...c.orders].sort((a,b)=>a.created_at<b.created_at?1:-1));
+ $('#ce').showModal()});
+$('#cq').oninput=()=>{clearTimeout(dt);dt=setTimeout(render,300)};
+$('#ce').onclick=e=>{if(e.target===e.currentTarget||e.target.id==='cx2')e.currentTarget.close()};
 
 $('#fs').innerHTML='<option value="">All statuses</option>'+ST.map(s=>`<option value="${s}">${LB[s]}</option>`).join('');
 $('#fs').onchange=$('#fd').onchange=render;
